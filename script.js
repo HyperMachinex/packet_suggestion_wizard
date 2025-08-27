@@ -264,27 +264,41 @@
   });
 
   // ---------- Aylık Mesaj (Segmentli Bar) ----------
+  // --- MONTHLY (Aylık Mesaj) pill görünümü ---
   (function injectMonthlyCSS(){
-    const old = document.getElementById('mm-style'); 
-    if (old) old.remove();
+    const old = document.getElementById('mm-style'); if (old) old.remove();
     const css = `
+    :root { --pill-border:#fff; }  /* çerçeve rengi */
+
     .mm-wrap{ margin-top:8px; position:relative; padding-top:22px; }
-    .mm-range{ position:relative; display:grid; grid-template-columns:repeat(4,1fr);
-               border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:#0d1017; }
-    .mm-fill{ position:absolute; left:0; top:0; bottom:0; width:0%;
-              background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
-              border-radius:inherit; pointer-events:none; transition:width .18s ease; }
-    .mm-seg{ position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
-             border-right:1px solid var(--border); outline:0; background:transparent; }
+    .mm-range{
+      position:relative; display:grid; grid-template-columns:repeat(4,1fr);
+      border:none; box-shadow: inset 0 0 0 2px var(--pill-border);   /* dışı full beyaz */
+      border-radius:9999px; overflow:hidden; background:#0d1017;
+    }
+    /* dolgu: kesintisiz + sol taraf hep yuvarlak; sağ taraf %100'de yuvarlanır (JS) */
+    .mm-fill{
+      position:absolute; left:0; top:0; bottom:0; width:0%;
+      background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
+      border-radius:9999px 0 0 9999px;
+      pointer-events:none; transition:width .18s ease;
+      z-index:1; transform:translateZ(0);
+    }
+    /* segment ayraçları: beyaz çizgi istersek var(--pill-border) kullan */
+    .mm-seg{
+      position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
+      border-right:1px solid var(--pill-border); outline:0; background:transparent; z-index:2;
+    }
     .mm-seg:last-child{ border-right:0; }
-    .mm-seg:focus-visible{ box-shadow: inset 0 0 0 2px var(--brand); }
+
     .mm-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
-    .mm-tick{ position:absolute; top:-18px; font-size:12px; color:var(--muted); white-space:nowrap; transform:translateX(-50%); }
+    .mm-tick{ position:absolute; top:-18px; font-size:12px; color:var(--pill-border); white-space:nowrap; transform:translateX(-50%); }
     .mm-tick.end{ transform:translateX(-100%); }
     `;
     const s = document.createElement('style'); s.id='mm-style'; s.textContent = css;
     document.head.appendChild(s);
   })();
+
 
   function initMonthlyMessagesSlider(){
     if(!monthlyMessages) return;
@@ -359,27 +373,39 @@
   }
 
   // ---------- Temsilci Sayısı (Segmentli Bar) ----------
+  // --- AGENT COUNT (Temsilci) pill görünümü ---
   (function injectAgentCSS(){
-    const old = document.getElementById('ac-style'); 
-    if (old) old.remove();
+    const old = document.getElementById('ac-style'); if (old) old.remove();
     const css = `
+    :root { --pill-border:#fff; }
+
     .ac-wrap{ margin-top:8px; position:relative; padding-top:22px; }
-    .ac-range{ position:relative; display:grid; grid-template-columns:repeat(5,1fr);
-               border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:#0d1017; }
-    .ac-fill{ position:absolute; left:0; top:0; bottom:0; width:0%;
-              background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
-              border-radius:inherit; pointer-events:none; transition:width .18s ease; }
-    .ac-seg{ position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
-             border-right:1px solid var(--border); outline:0; background:transparent; }
+    .ac-range{
+      position:relative; display:grid; grid-template-columns:repeat(5,1fr);
+      border:none; box-shadow: inset 0 0 0 2px var(--pill-border); /* dışı full beyaz */
+      border-radius:9999px; overflow:hidden; background:#0d1017;
+    }
+    .ac-fill{
+      position:absolute; left:0; top:0; bottom:0; width:0%;
+      background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
+      border-radius:9999px 0 0 9999px; /* sol hep yuvarlak */
+      pointer-events:none; transition:width .18s ease;
+      z-index:1; transform:translateZ(0);
+    }
+    .ac-seg{
+      position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
+      border-right:1px solid var(--pill-border); outline:0; background:transparent; z-index:2; /* beyaz bölme çizgileri */
+    }
     .ac-seg:last-child{ border-right:0; }
-    .ac-seg:focus-visible{ box-shadow: inset 0 0 0 2px var(--brand); }
+
     .ac-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
-    .ac-tick{ position:absolute; top:-18px; font-size:12px; color:var(--muted); white-space:nowrap; transform:translateX(-50%); }
+    .ac-tick{ position:absolute; top:-18px; font-size:12px; color:var(--pill-border); white-space:nowrap; transform:translateX(-50%); }
     .ac-tick.end{ transform:translateX(-100%); }
     `;
     const s = document.createElement('style'); s.id='ac-style'; s.textContent = css;
     document.head.appendChild(s);
   })();
+
 
   function initAgentCountSlider(){
     if(!temsilciCount) return;
