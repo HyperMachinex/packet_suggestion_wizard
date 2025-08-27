@@ -594,11 +594,168 @@
       localStorage.setItem(stateKey, json);
     }catch(_){/* noop */}
   })();
+  // --- Intl Tel Input (CSS inject) ---
+  (function injectIntlTelCSS(){
+    if (document.getElementById('intl-tel-style')) return;
+    const css = `
+    .tel-wrap{display:flex;gap:8px;align-items:stretch;position:relative}
+    .tel-cc-btn{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--border);
+      background:#0d1017;color:var(--text);border-radius:10px;cursor:pointer;white-space:nowrap}
+    .tel-cc-btn .flag{font-size:18px;line-height:1}
+    .tel-cc-btn .code{opacity:.9;font-variant-numeric:tabular-nums}
+    .tel-list{position:absolute;z-index:1000;left:0;top:100%;margin-top:6px;width:min(420px,92vw);
+      background:#0b0f16;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
+    .tel-list.open{display:block}
+    .tel-search{width:calc(100% - 16px);margin:8px 8px 6px;padding:8px 10px;border:1px solid var(--border);
+      background:#0d1017;color:var(--text);border-radius:8px;outline:0}
+    .tel-items{max-height:300px;overflow:auto;padding:4px}
+    .tel-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:transparent;border:0;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left}
+    .tel-item:hover,.tel-item:focus{background:#0f1520;outline:1px solid var(--border)}
+    .tel-item .left{display:flex;align-items:center;gap:10px}
+    .tel-item .flag{font-size:18px}
+    .tel-item .name{opacity:.95}
+    .tel-item .dial{font-variant-numeric:tabular-nums;opacity:.9}
+    `;
+    const s=document.createElement('style'); s.id='intl-tel-style'; s.textContent=css; document.head.appendChild(s);
+  })();
+
+  // --- Intl Tel Input ---
+  const INTL_COUNTRIES = [
+    {iso:'TR', name:'Türkiye', dial:'90'},
+    {iso:'US', name:'United States', dial:'1'},
+    {iso:'GB', name:'United Kingdom', dial:'44'},
+    {iso:'DE', name:'Deutschland', dial:'49'},
+    {iso:'FR', name:'France', dial:'33'},
+    {iso:'NL', name:'Nederland', dial:'31'},
+    {iso:'ES', name:'España', dial:'34'},
+    {iso:'IT', name:'Italia', dial:'39'},
+    {iso:'GR', name:'Ελλάδα', dial:'30'},
+    {iso:'PT', name:'Portugal', dial:'351'},
+    {iso:'SE', name:'Sverige', dial:'46'},
+    {iso:'NO', name:'Norge', dial:'47'},
+    {iso:'DK', name:'Danmark', dial:'45'},
+    {iso:'FI', name:'Suomi', dial:'358'},
+    {iso:'PL', name:'Polska', dial:'48'},
+    {iso:'RO', name:'România', dial:'40'},
+    {iso:'BG', name:'Bulgaria', dial:'359'},
+    {iso:'RU', name:'Россия', dial:'7'},
+    {iso:'UA', name:'Україна', dial:'380'},
+    {iso:'AZ', name:'Azərbaycan', dial:'994'},
+    {iso:'GE', name:'საქართველო', dial:'995'},
+    {iso:'KZ', name:'Қазақстан', dial:'7'},
+    {iso:'SA', name:'Saudi Arabia', dial:'966'},
+    {iso:'AE', name:'United Arab Emirates', dial:'971'},
+    {iso:'QA', name:'Qatar', dial:'974'},
+    {iso:'KW', name:'Kuwait', dial:'965'},
+    {iso:'BH', name:'Bahrain', dial:'973'},
+    {iso:'OM', name:'Oman', dial:'968'},
+    {iso:'IR', name:'Iran', dial:'98'},
+    {iso:'IQ', name:'Iraq', dial:'964'},
+    {iso:'IL', name:'Israel', dial:'972'},
+    {iso:'IN', name:'India', dial:'91'},
+    {iso:'PK', name:'Pakistan', dial:'92'},
+    {iso:'BD', name:'Bangladesh', dial:'880'},
+    {iso:'ID', name:'Indonesia', dial:'62'},
+    {iso:'PH', name:'Philippines', dial:'63'},
+    {iso:'MY', name:'Malaysia', dial:'60'},
+    {iso:'SG', name:'Singapore', dial:'65'},
+    {iso:'JP', name:'日本', dial:'81'},
+    {iso:'KR', name:'대한민국', dial:'82'},
+    {iso:'CN', name:'中国', dial:'86'},
+    {iso:'HK', name:'香港', dial:'852'},
+    {iso:'TW', name:'台灣', dial:'886'},
+    {iso:'AU', name:'Australia', dial:'61'},
+    {iso:'NZ', name:'New Zealand', dial:'64'},
+    {iso:'MX', name:'México', dial:'52'},
+    {iso:'AR', name:'Argentina', dial:'54'},
+    {iso:'BR', name:'Brasil', dial:'55'},
+    {iso:'CL', name:'Chile', dial:'56'},
+    {iso:'ZA', name:'South Africa', dial:'27'},
+  ];
+
+  function flagEmoji(iso2){
+    return [...iso2.toUpperCase()].map(c => String.fromCodePoint(127397 + c.charCodeAt(0))).join('');
+  }
+  function digits(s){ return String(s||'').replace(/\D+/g,''); }
+
+  function initIntlTel(inputId, defaultIso='TR'){
+    const input = document.getElementById(inputId);
+    if(!input) return;
+
+    // sarmala
+    const wrap = document.createElement('div'); wrap.className='tel-wrap';
+    input.parentElement.insertBefore(wrap, input);
+    wrap.appendChild(input);
+
+    // gizli alanlar (dial & e164)
+    const hidDial = document.createElement('input'); hidDial.type='hidden'; hidDial.name = input.name + '_dial';
+    const hidFull = document.createElement('input'); hidFull.type='hidden'; hidFull.name = input.name + '_full';
+    wrap.appendChild(hidDial); wrap.appendChild(hidFull);
+
+    // buton
+    const btn = document.createElement('button'); btn.type='button'; btn.className='tel-cc-btn';
+    const btnFlag = document.createElement('span'); btnFlag.className='flag';
+    const btnCode = document.createElement('span'); btnCode.className='code';
+    btn.append(btnFlag, btnCode);
+    wrap.insertBefore(btn, input);
+
+    // dropdown
+    const list = document.createElement('div'); list.className='tel-list';
+    const search = document.createElement('input'); search.className='tel-search'; search.placeholder='Ülke veya kod ara…';
+    const items = document.createElement('div'); items.className='tel-items';
+    list.appendChild(search); list.appendChild(items);
+    wrap.appendChild(list);
+
+    // liste öğeleri
+    function render(filter=''){
+      const f = filter.trim().toLowerCase();
+      items.innerHTML = '';
+      INTL_COUNTRIES
+        .filter(c => !f || c.name.toLowerCase().includes(f) || c.iso.toLowerCase().includes(f) || ('+'+c.dial).includes(f))
+        .forEach(c=>{
+          const b=document.createElement('button'); b.type='button'; b.className='tel-item';
+          b.innerHTML = `<span class="left"><span class="flag">${flagEmoji(c.iso)}</span><span class="name">${c.name}</span></span><span class="dial">+${c.dial}</span>`;
+          b.addEventListener('click',()=>{ setCountry(c); close(); });
+          items.appendChild(b);
+        });
+    }
+    render();
+    search.addEventListener('input', ()=>render(search.value));
+
+    // aç/kapa
+    function open(){ list.classList.add('open'); search.focus(); }
+    function close(){ list.classList.remove('open'); }
+    btn.addEventListener('click', (e)=>{ e.preventDefault(); list.classList.toggle('open'); if(list.classList.contains('open')) search.focus(); });
+    document.addEventListener('click', (e)=>{ if(!wrap.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+    // seçimi uygula + e164 üret
+    function setCountry(c){
+      btnFlag.textContent = flagEmoji(c.iso);
+      btnCode.textContent = `+${c.dial}`;
+      hidDial.value = c.dial;
+      updateFull();
+    }
+    function updateFull(){
+      const e164 = '+' + (hidDial.value||'') + digits(input.value);
+      hidFull.value = e164;
+    }
+    input.addEventListener('input', updateFull);
+
+    // başlangıç
+    const start = INTL_COUNTRIES.find(c=>c.iso===defaultIso) || INTL_COUNTRIES[0];
+    setCountry(start);
+  }
 
   // ---- Başlat
   restore();
   initMonthlyMessagesSlider();
   initAgentCountSlider();
+  initIntlTel('phoneBireysel','TR'); // bireysel
+  initIntlTel('phone','TR');   
   showStep(0);
+
+  
 
 })();
