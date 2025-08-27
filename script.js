@@ -127,6 +127,72 @@
     trafik: () => !!(monthlyMessages && monthlyMessages.value) && !!(temsilciCount && temsilciCount.value),
   };
 
+  // ---- Error helpers ----
+  function _anchorFor(el){ return el.closest('.tel-wrap') || el; } // tel-wrap varsa uyarıyı onun ALTINA koy
+  function setFieldError(el, msg){
+    clearFieldError(el);
+    const p = document.createElement('div');
+    p.className = 'field-error';
+    p.textContent = msg;
+    _anchorFor(el).insertAdjacentElement('afterend', p);
+    el.classList.add('input-invalid');
+  }
+  function clearFieldError(el){
+    el.classList.remove('input-invalid');
+    const a = _anchorFor(el);
+    const n = a.nextElementSibling;
+    if(n && n.classList.contains('field-error')) n.remove();
+  }
+
+  // ---- Validators ----
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+  function validateEmailField(el){
+    if(!el) return true;
+    clearFieldError(el);
+    const v = (el.value||'').trim();
+    if(!EMAIL_RE.test(v)){
+      setFieldError(el, 'Lütfen geçerli bir e-posta adresi girin.');
+      return false;
+    }
+    return true;
+  }
+
+  function validatePhoneField(el){
+    if(!el) return true;
+    clearFieldError(el);
+    const v = (el.value||'').trim();
+    // Tel bileşeninden gelen E.164 gizli alanı varsa onu doğrula
+    const wrap = el.closest('.tel-wrap');
+    const hiddenFull = wrap?.querySelector(`input[name="${el.name}_full"]`);
+    if(hiddenFull && hiddenFull.value){
+      const ok = /^\+\d{8,15}$/.test(hiddenFull.value); // E.164 aralığı
+      if(!ok){ setFieldError(el,'Lütfen geçerli bir telefon numarası girin.'); return false; }
+      return true;
+    }
+    // Yoksa düz sayıya göre kontrol et
+    const digits = v.replace(/\D+/g,'');
+    if(digits.length < 8 || digits.length > 15){
+      setFieldError(el,'Telefon numarası 8–15 haneli olmalıdır.');
+      return false;
+    }
+    return true;
+  }
+
+  // Kimlik adımında temas bilgilerini doğrula
+  function validateContactsOnStep(){
+    const ids = getCurrentIds();
+    if(!ids.includes('kimlik')) return true;
+    const isBireysel = customerType.value === 'bireysel';
+    const emailEl = document.getElementById(isBireysel ? 'email' : 'emailCorp');
+    const phoneEl = document.getElementById(isBireysel ? 'phoneBireysel' : 'phone');
+    const ok1 = validateEmailField(emailEl);
+    const ok2 = validatePhoneField(phoneEl);
+    if(!ok1) emailEl?.focus(); else if(!ok2) phoneEl?.focus();
+    return ok1 && ok2;
+  }
+
+
   // ---- Paket önerme
   function getPackageSuggestion(){
     const data = new FormData(form);
@@ -219,6 +285,7 @@
   }
 
   btnNext.addEventListener('click', () => {
+    if(!validateContactsOnStep()) return;
     const lastBeforeSummary = stepGroups.length - 2;
 
     if (idx === lastBeforeSummary) {
@@ -299,6 +366,16 @@
     document.head.appendChild(s);
   })();
 
+  // --- Field error styles (inject) ---
+  (function injectErrorCSS(){
+    if (document.getElementById('err-style')) return;
+    const css = `
+    .field-error{ margin-top:6px; font-size:12px; color:var(--warn); }
+    .input-invalid{ outline:2px solid var(--warn); }
+    `;
+    const s=document.createElement('style'); s.id='err-style'; s.textContent=css;
+    document.head.appendChild(s);
+  })();
 
   function initMonthlyMessagesSlider(){
     if(!monthlyMessages) return;
@@ -747,7 +824,12 @@
     const start = INTL_COUNTRIES.find(c=>c.iso===defaultIso) || INTL_COUNTRIES[0];
     setCountry(start);
   }
-
+  ['email','emailCorp'].forEach(id=>{
+    const el=document.getElementById(id); el?.addEventListener('blur', e=>validateEmailField(e.target));
+  });
+  ['phoneBireysel','phone'].forEach(id=>{
+    const el=document.getElementById(id); el?.addEventListener('blur', e=>validatePhoneField(e.target));
+  });
   // ---- Başlat
   restore();
   initMonthlyMessagesSlider();
