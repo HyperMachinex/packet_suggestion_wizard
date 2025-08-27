@@ -1,17 +1,35 @@
-// --------------------------- script.js (v3 – Grup adımları + paket öneri + okunaklı özet) ---------------------------
-(()=>{
+// --------------------------- script.js (v4 – Grup adımları + paket öneri + okunaklı özet + 2 slider) ---------------------------
+(() => {
+  // --- DOM referansları
   const form = document.getElementById('featureForm');
-  const monthlyMessages = document.getElementById('monthlyMessages');
-  const temsilciCount   = document.getElementById('temsilciCount');
 
-  // Tekil adımlar yerine, bir adımda birden fazla bölüm gösterecek şekilde grupladık:
+  const btnBack     = document.getElementById('btnBack');
+  const btnNext     = document.getElementById('btnNext');
+  const stepLabel   = document.getElementById('stepLabel');
+  const progressBar = document.getElementById('progressBar');
+
+  const customerType      = document.getElementById('customerType');
+  const bireyselFields    = document.getElementById('bireyselFields');
+  const kurumsalFields    = document.getElementById('kurumsalFields');
+  const fullNameInput     = document.getElementById('fullName');
+  const companyNameInput  = document.getElementById('companyName');
+
+  const monthlyMessages   = document.getElementById('monthlyMessages'); // select (gizlenecek)
+  const temsilciCount     = document.getElementById('temsilciCount');   // select (gizlenecek)
+
+  const $  = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const stateKey = 'ccpilot_wizard_v1';
+
+  // --- Adım grupları
   // 1) kimlik
   // 2) trafik
   // 3) kanal
   // 4) sohbet
   // 5) ziyaret + crm
   // 6) ai + marketing
-  // 7) operasyon + dev + security   ← burada "Paket Öner" tetiklenir
+  // 7) operasyon + dev + security  ← burada "Paket Öner" tetiklenir
   // 8) summary
   const stepGroups = [
     ['kimlik'],
@@ -21,84 +39,71 @@
     ['ziyaret', 'crm'],
     ['ai', 'marketing'],
     ['operasyon', 'dev', 'security'],
-    ['summary']
+    ['summary'],
   ];
 
   const labels = {
-    kimlik:'Bilgiler',
-    trafik:'Trafik',
-    kanal:'Kanallar',
-    sohbet:'Sohbet',
-    ziyaret:'Ziyaretçi',
-    ai:'Yapay Zeka',
+    kimlik:   'Bilgiler',
+    trafik:   'Trafik',
+    kanal:    'Kanallar',
+    sohbet:   'Sohbet',
+    ziyaret:  'Ziyaretçi',
+    ai:       'Yapay Zeka',
     marketing:'Pazarlama',
     operasyon:'Operasyon',
-    crm:'CRM',
-    dev:'Geliştirici',
-    security:'Güvenlik',
-    summary:'Özet'
+    crm:      'CRM',
+    dev:      'Geliştirici',
+    security: 'Güvenlik',
+    summary:  'Özet',
   };
 
-  const stateKey = 'ccpilot_wizard_v1';
-  const $  = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
-
-  const btnBack     = $('#btnBack');
-  const btnNext     = $('#btnNext');
-  const stepLabel   = $('#stepLabel');
-  const progressBar = $('#progressBar');
-
-  const customerType   = $('#customerType');
-  const bireyselFields = $('#bireyselFields');
-  const kurumsalFields = $('#kurumsalFields');
-
-  // ---- Dinamik özellik listeleri (placeholder) ----
+  // ---- Dinamik özellik listeleri (placeholder)
   const RAW_GROUPS = {
     kanal: [
       'Facebook, Instagram, Viber, Telegram Entegrasyonları',
       'Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)',
       'Apple Business Chat',
-      "Facebook, Instagram ve Telegram'da Sesli Mesajlar"
+      "Facebook, Instagram ve Telegram'da Sesli Mesajlar",
     ],
     mobil: [
-      'Mobil Uygulama SDK','Telefon+ Modülü','Görüntülü Görüşme Modülü'
+      'Mobil Uygulama SDK','Telefon+ Modülü','Görüntülü Görüşme Modülü',
     ],
     pencere: [
       'Sohbet öncesi butonlar','Dosya gönderme-alma',
-      'Mobil cihazlara uygun sohbet penceresi','Gönderim sonrası yanıt düzenleme'
+      'Mobil cihazlara uygun sohbet penceresi','Gönderim sonrası yanıt düzenleme',
     ],
     agent: [
-      'Yazım denetimi','Taslak cevaplar','Çoklu temsilcili sohbetler','Temsilci atama'
+      'Yazım denetimi','Taslak cevaplar','Çoklu temsilcili sohbetler','Temsilci atama',
     ],
     ziyaret: [
       'Ziyaretçi ısı haritası','Kaynak/utm takibi','Akıllı yönlendirme',
-      'Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme'
+      'Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
     ],
     ai: ['Soru-cevap botu','Özet çıkarma','Duygu analizi'],
     marketing: ['Kampanya tetikleyici','E-posta entegrasyonu','Raporlama API'],
     operasyon: ['Vardiya planlama','Yetkilendirme','Onay akışları'],
     crm: ['Müşteri profili','Sipariş senkronizasyonu','Fatura entegrasyonu',"Excel'e veri dökümü alma"],
     dev: ['REST API','Webhook','SDK'],
-    security: ['IP kısıtlama','2FA','KVKK uyumu']
+    security: ['IP kısıtlama','2FA','KVKK uyumu'],
   };
 
   function slugify(s){
     return s.toLowerCase()
       .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g,'')   // diakritik temizliği (güvenli aralık)
+      .replace(/[\u0300-\u036f]/g,'')   // güvenli diakritik temizliği
       .replace(/[^a-z0-9]+/g,'-')
       .replace(/^-+|-+$/g,'');
   }
   function renderGroup(containerId, arr){
     const el = document.getElementById(containerId);
     if(!el) return;
-    el.innerHTML = arr.map(txt=>{
+    el.innerHTML = arr.map(txt => {
       const v = slugify(txt);
-      return `<label class="card" style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="features[]" value="${v}" data-label="${txt}"/> ${txt}</label>`;
+      return `<label class="card" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" name="features[]" value="${v}" data-label="${txt}"/> ${txt}
+      </label>`;
     }).join('');
   }
-
-  // Map containers
   renderGroup('grp-kanal',     RAW_GROUPS.kanal);
   renderGroup('grp-mobil',     RAW_GROUPS.mobil);
   renderGroup('grp-pencere',   RAW_GROUPS.pencere);
@@ -111,33 +116,171 @@
   renderGroup('grp-dev',       RAW_GROUPS.dev);
   renderGroup('grp-security',  RAW_GROUPS.security);
 
+  // ---- Doğrulama kuralları
+  const requiredByStep = {
+    kimlik: () => {
+      const type = customerType.value;
+      if (type === 'bireysel') return !!(fullNameInput && fullNameInput.value.trim());
+      if (type === 'kurumsal') return !!(companyNameInput && companyNameInput.value.trim());
+      return true;
+    },
+    trafik: () => !!(monthlyMessages && monthlyMessages.value) && !!(temsilciCount && temsilciCount.value),
+  };
+
+  // ---- Paket önerme
+  function getPackageSuggestion(){
+    const data = new FormData(form);
+    const monthly = String(data.get('monthlyMessages')||'');
+    const agent   = String(data.get('temsilciCount')||'');
+
+    const has = (label) => !!$$('input[name="features[]"]').find(cb => cb.dataset.label === label && cb.checked);
+
+    // 1) Kurumsal özellikler tetikler
+    const enterpriseFeatures = ['Mobil Uygulama SDK','Sohbet yönlendirme','Görüntülü Görüşme Modülü'];
+    if (enterpriseFeatures.some(has)) {
+      const chosen = enterpriseFeatures.filter(has).join(', ');
+      return { pkg:'Kurumsal Paket', desc:'Kurumsal özellikler seçildiği için', reason:`Seçilen kurumsal özellik(ler): ${chosen}` };
+    }
+
+    // 2) Hacim/ekip eşiği -> Kurumsal (100k+ doğrudan kurumsal)
+    if (['100k+','100k-1m','1m+'].includes(monthly) || agent === '20+') {
+      return { pkg:'Kurumsal Paket', desc:'Yüksek trafik/ekip hacmi', reason:'100K+ mesaj veya 20+ temsilci' };
+    }
+
+    // 3) Premium: 10K-100K
+    if (monthly === '10k-100k') {
+      return { pkg:'Premium Paket', desc:'10K-100K aylık mesaj hacmi', reason:'Hacim temelli öneri' };
+    }
+
+    // 4) Premium özellikleri
+    const premiumFeatures = ['Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)', "Facebook, Instagram ve Telegram'da Sesli Mesajlar"];
+    if (premiumFeatures.some(has)) {
+      const chosen = premiumFeatures.filter(has).join(', ');
+      return { pkg:'Premium Paket', desc:'Gelişmiş kanal özellikleri', reason:`Seçilen: ${chosen}` };
+    }
+
+    // 5) Pro özellikleri
+    const proFeatures = [
+      'Sohbet öncesi butonlar','Dosya gönderme-alma','Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
+      "Excel'e veri dökümü alma",'Müşteri profili','Kampanya tetikleyici','Raporlama API'
+    ];
+    if (proFeatures.some(has)) {
+      const chosen = proFeatures.filter(has).join(', ');
+      return { pkg:'Profesyonel Paket', desc:'Gelişmiş işlevler seçildi', reason:`Seçilen: ${chosen}` };
+    }
+
+    // 6) Ücretsiz: düşük hacim + küçük ekip
+    if (agent==='1-2' && monthly==='0-1000') {
+      return { pkg:'Ücretsiz Paket', desc:'Düşük hacim ve küçük ekip', reason:'0-1K mesaj & 1-2 temsilci' };
+    }
+
+    // 7) Varsayılan
+    return { pkg:'Profesyonel Paket', desc:'Varsayılan öneri', reason:'Özellik/ölçek eşiklerine göre orta seviye' };
+  }
+
+  // ---- Adım makinesi
+  let idx = 0;
+  const getCurrentIds = () => stepGroups[idx] || [];
+  const isSummary     = () => getCurrentIds().includes('summary');
+
+  function showStep(i){
+    idx = Math.max(0, Math.min(i, stepGroups.length-1));
+    $$('.step').forEach(s => s.classList.add('hidden'));
+    getCurrentIds().forEach(id => {
+      const el = document.getElementById(`step-${id}`);
+      if (el) el.classList.remove('hidden');
+    });
+
+    // Buton metinleri
+    const lastBeforeSummary = stepGroups.length - 2;
+    btnBack.disabled   = idx === 0;
+    btnNext.textContent = idx === lastBeforeSummary ? 'Paket Öner' : (isSummary() ? 'Bitti' : 'Devam Et');
+
+    // İlerleme & başlık
+    const totalCount = stepGroups.length - 1;
+    const shownIndex = Math.min(idx + 1, totalCount);
+    const groupLabel = isSummary() ? 'Özet' : getCurrentIds().map(id => labels[id]).join(' + ');
+    stepLabel.textContent = `Adım ${Math.min(shownIndex, totalCount)}/${totalCount}: ${groupLabel}`;
+    const pct = Math.round((Math.min(idx, totalCount - 1) + 1) / totalCount * 100);
+    progressBar.style.width = pct + '%';
+
+    // İlk odak
+    const first = document.querySelector(
+      getCurrentIds().map(id => `#step-${id} input, #step-${id} select, #step-${id} textarea, #step-${id} button`).join(', ')
+    );
+    first?.focus();
+  }
+
+  function canProceed(){
+    const ids = getCurrentIds();
+    if (ids.includes('kimlik') && !requiredByStep.kimlik()) return false;
+    if (ids.includes('trafik') && !requiredByStep.trafik()) return false;
+    return true;
+  }
+
+  btnNext.addEventListener('click', () => {
+    const lastBeforeSummary = stepGroups.length - 2;
+
+    if (idx === lastBeforeSummary) {
+      const rec = getPackageSuggestion();
+      localStorage.setItem(stateKey + ':pkg', JSON.stringify(rec));
+      buildSummary(rec);
+      showStep(idx + 1);
+      return;
+    }
+
+    if (isSummary()) return;
+
+    if (!canProceed()) {
+      // basit vurgulu doğrulama
+      getCurrentIds().forEach(id => {
+        const section = document.getElementById(`step-${id}`);
+        section?.querySelectorAll('select[required], input[required]').forEach(el => {
+          if (!el.value) el.style.outline = '2px solid var(--warn)'; else el.style.outline = '';
+        });
+      });
+      return;
+    }
+
+    persist();
+    showStep(idx + 1);
+  });
+
+  btnBack.addEventListener('click', () => showStep(idx - 1));
+
+  // Enter = ileri, Shift+Enter = geri
+  form.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !['TEXTAREA'].includes(e.target.tagName)) {
+      e.preventDefault();
+      if (e.shiftKey) btnBack.click(); else btnNext.click();
+    }
+  });
+
+  // Bireysel/kurumsal alanlarını değiştir
+  customerType.addEventListener('change', () => {
+    const isBireysel = customerType.value === 'bireysel';
+    bireyselFields.style.display = isBireysel ? 'grid' : 'none';
+    kurumsalFields.style.display = isBireysel ? 'none' : 'grid';
+  });
+
   // ---------- Aylık Mesaj (Segmentli Bar) ----------
-// ---------- Aylık Mesaj (Segmentli Bar) ----------
   (function injectMonthlyCSS(){
-    // eski stili kaldırıp yenisini takalım
     const old = document.getElementById('mm-style'); 
     if (old) old.remove();
-
     const css = `
     .mm-wrap{ margin-top:8px; position:relative; padding-top:22px; }
     .mm-range{ position:relative; display:grid; grid-template-columns:repeat(4,1fr);
-              border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:#0d1017; }
-    /* Kesintisiz yeşil dolgu katmanı */
+               border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:#0d1017; }
     .mm-fill{ position:absolute; left:0; top:0; bottom:0; width:0%;
               background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
               border-radius:inherit; pointer-events:none; transition:width .18s ease; }
-
     .mm-seg{ position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
-            border-right:1px solid var(--border); outline:0; background:transparent; }
+             border-right:1px solid var(--border); outline:0; background:transparent; }
     .mm-seg:last-child{ border-right:0; }
-    /* önceki sürümdeki yeşil çerçeveyi kaldırıyoruz */
-    .mm-seg.active{ box-shadow:none; background:transparent; }
     .mm-seg:focus-visible{ box-shadow: inset 0 0 0 2px var(--brand); }
-
-    /* Çizgi üstündeki etiketler */
     .mm-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
     .mm-tick{ position:absolute; top:-18px; font-size:12px; color:var(--muted); white-space:nowrap; transform:translateX(-50%); }
-    .mm-tick.end{ transform:translateX(-100%); } /* 100.000+ sağ çizgi üstü */
+    .mm-tick.end{ transform:translateX(-100%); }
     `;
     const s = document.createElement('style'); s.id='mm-style'; s.textContent = css;
     document.head.appendChild(s);
@@ -152,10 +295,8 @@
     const wrap  = document.createElement('div');  wrap.className = 'mm-wrap';
     const ticks = document.createElement('div');  ticks.className = 'mm-ticks';
     const range = document.createElement('div');  range.className = 'mm-range';
-
-    // Kesintisiz dolgu
     const fill  = document.createElement('div');  fill.className = 'mm-fill';
-    range.appendChild(fill); // önce doldurma katmanını ekliyoruz
+    range.appendChild(fill);
 
     const segs = [
       { value:'0-1000',     label:'1.000'    },
@@ -164,13 +305,11 @@
       { value:'100k+',      label:'100.000+' }
     ];
 
-    // Etiketleri çizgi üstlerine yerleştir
     const tickPos = [25, 50, 75, 100];
     ticks.innerHTML = segs.map((s,i)=>(
       `<span class="mm-tick ${i===segs.length-1?'end':''}" style="left:${tickPos[i]}%">${s.label}</span>`
     )).join('');
 
-    // Segment butonları
     const segButtons = [];
     segs.forEach((s, idx) => {
       const b = document.createElement('button');
@@ -183,12 +322,8 @@
 
       b.addEventListener('click', () => selectSeg(s.value));
       b.addEventListener('keydown', (e) => {
-        if(e.key==='ArrowRight' || e.key==='ArrowDown'){
-          e.preventDefault(); selectSeg(segs[Math.min(idx+1, segs.length-1)].value, true);
-        }
-        if(e.key==='ArrowLeft' || e.key==='ArrowUp'){
-          e.preventDefault(); selectSeg(segs[Math.max(idx-1, 0)].value, true);
-        }
+        if(e.key==='ArrowRight' || e.key==='ArrowDown'){ e.preventDefault(); selectSeg(segs[Math.min(idx+1, segs.length-1)].value, true); }
+        if(e.key==='ArrowLeft'  || e.key==='ArrowUp'  ){ e.preventDefault(); selectSeg(segs[Math.max(idx-1, 0)].value, true); }
       });
 
       range.appendChild(b);
@@ -200,7 +335,6 @@
     container.appendChild(wrap);
 
     function normalizeMonthly(val){
-      // Eski değerlerle uyumluluk
       if(val==='100k-1m' || val==='1m+' || val==='100k+') return '100k+';
       return val;
     }
@@ -210,14 +344,10 @@
       monthlyMessages.value = normalized;
 
       const selIndex = segs.findIndex(x => x.value === normalized);
-
-      // Dolgu genişliği: (seçili index +1) / 4
       const pct = selIndex >= 0 ? ((selIndex+1)/segs.length)*100 : 0;
       fill.style.width = pct + '%';
 
-      // ARIA durumu (sadece seçili true)
       segButtons.forEach((btn,i)=>{
-        btn.classList.toggle('active', i <= selIndex && selIndex !== -1); // sadece erişilebilirlik için
         btn.setAttribute('aria-checked', (i===selIndex) ? 'true' : 'false');
       });
 
@@ -228,157 +358,96 @@
     selectSeg(normalizeMonthly(monthlyMessages.value || ''));
   }
 
+  // ---------- Temsilci Sayısı (Segmentli Bar) ----------
+  (function injectAgentCSS(){
+    const old = document.getElementById('ac-style'); 
+    if (old) old.remove();
+    const css = `
+    .ac-wrap{ margin-top:8px; position:relative; padding-top:22px; }
+    .ac-range{ position:relative; display:grid; grid-template-columns:repeat(5,1fr);
+               border:1.5px solid var(--border); border-radius:16px; overflow:hidden; background:#0d1017; }
+    .ac-fill{ position:absolute; left:0; top:0; bottom:0; width:0%;
+              background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
+              border-radius:inherit; pointer-events:none; transition:width .18s ease; }
+    .ac-seg{ position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
+             border-right:1px solid var(--border); outline:0; background:transparent; }
+    .ac-seg:last-child{ border-right:0; }
+    .ac-seg:focus-visible{ box-shadow: inset 0 0 0 2px var(--brand); }
+    .ac-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
+    .ac-tick{ position:absolute; top:-18px; font-size:12px; color:var(--muted); white-space:nowrap; transform:translateX(-50%); }
+    .ac-tick.end{ transform:translateX(-100%); }
+    `;
+    const s = document.createElement('style'); s.id='ac-style'; s.textContent = css;
+    document.head.appendChild(s);
+  })();
 
-  // ---- Zorunluluklar (kimlik, trafik) ----
-  function isKimlikValid(){
-    const type = customerType.value;
-    if(type==='bireysel') return !!$('#fullName')?.value.trim();
-    if(type==='kurumsal') return !!$('#companyName')?.value.trim();
-    return true;
-  }
-  function isTrafikValid(){
-    return !!$('#monthlyMessages')?.value && !!$('#temsilciCount')?.value;
-  }
+  function initAgentCountSlider(){
+    if(!temsilciCount) return;
 
-  // ---- Paket önerme (uploaded algoritmadan uyarlanmış) ----
-  function getPackageSuggestion(){
-    const data = new FormData(form);
-    const monthlyMessages = String(data.get('monthlyMessages')||'');
-    const agentCount      = String(data.get('temsilciCount')||'');
-    const has = (label)=> !!$$('input[name="features[]"]').find(cb=>cb.dataset.label===label && cb.checked);
+    temsilciCount.style.display = 'none';
+    const container = temsilciCount.parentElement;
 
-    // 1) Kurumsal özellikler
-    const enterpriseFeatures = ['Mobil Uygulama SDK','Sohbet yönlendirme','Görüntülü Görüşme Modülü'];
-    if(enterpriseFeatures.some(has)){
-      const chosen = enterpriseFeatures.filter(has).join(', ');
-      return { pkg:'Kurumsal Paket', desc:'Kurumsal özellikler seçildiği için', reason:`Seçilen kurumsal özellik(ler): ${chosen}` };
-    }
+    const wrap  = document.createElement('div');  wrap.className = 'ac-wrap';
+    const ticks = document.createElement('div');  ticks.className = 'ac-ticks';
+    const range = document.createElement('div');  range.className = 'ac-range';
+    const fill  = document.createElement('div');  fill.className = 'ac-fill';
+    range.appendChild(fill);
 
-    // 2) Hacim/Ekip eşiği
-    if(['100k-1m','1m+'].includes(monthlyMessages) || agentCount==='20+'){
-      return { pkg:'Kurumsal Paket', desc:'Yüksek trafik/ekip hacmi', reason:'100K+ mesaj veya 20+ temsilci' };
-    }
-
-    // 3) Premium: 10K-100K
-    if(monthlyMessages==='10k-100k'){
-      return { pkg:'Premium Paket', desc:'10K-100K aylık mesaj hacmi', reason:'Hacim temelli öneri' };
-    }
-
-    // 4) Premium özellikleri
-    const premiumFeatures = ['Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)', "Facebook, Instagram ve Telegram'da Sesli Mesajlar"];
-    if(premiumFeatures.some(has)){
-      const chosen = premiumFeatures.filter(has).join(', ');
-      return { pkg:'Premium Paket', desc:'Gelişmiş kanal özellikleri', reason:`Seçilen: ${chosen}` };
-    }
-
-    // 5) Pro özellikleri
-    const proFeatures = [
-      'Sohbet öncesi butonlar','Dosya gönderme-alma','Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
-      "Excel'e veri dökümü alma",'Müşteri profili','Kampanya tetikleyici','Raporlama API'
+    const segs = [
+      { value:'1-2',   label:'2'   },
+      { value:'3-5',   label:'5'   },
+      { value:'6-10',  label:'10'  },
+      { value:'11-20', label:'20'  },
+      { value:'20+',   label:'20+' }
     ];
-    if(proFeatures.some(has)){
-      const chosen = proFeatures.filter(has).join(', ');
-      return { pkg:'Profesyonel Paket', desc:'Gelişmiş işlevler seçildi', reason:`Seçilen: ${chosen}` };
-    }
 
-    // 6) Ücretsiz: düşük hacim + küçük ekip
-    if(agentCount==='1-2' && monthlyMessages==='0-1000'){
-      return { pkg:'Ücretsiz Paket', desc:'Düşük hacim ve küçük ekip', reason:'0-1K mesaj & 1-2 temsilci' };
-    }
+    const tickHtml = segs.map((s,i)=>{
+      const pct = (i+1)/segs.length*100;
+      const end = i===segs.length-1 ? 'end' : '';
+      return `<span class="ac-tick ${end}" style="left:${pct}%">${s.label}</span>`;
+    }).join('');
+    ticks.innerHTML = tickHtml;
 
-    // 7) Varsayılan
-    return { pkg:'Profesyonel Paket', desc:'Varsayılan öneri', reason:'Özellik/ölçek eşiklerine göre orta seviye' };
-  }
+    const segButtons = [];
+    segs.forEach((s, idx) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ac-seg';
+      b.dataset.value = s.value;
+      b.setAttribute('role','radio');
+      b.setAttribute('aria-checked','false');
+      b.tabIndex = 0;
 
-  // ---- Adım makinesi ----
-  let idx = 0;
+      b.addEventListener('click', () => selectSeg(s.value));
+      b.addEventListener('keydown', (e) => {
+        if(e.key==='ArrowRight' || e.key==='ArrowDown'){ e.preventDefault(); selectSeg(segs[Math.min(idx+1, segs.length-1)].value, true); }
+        if(e.key==='ArrowLeft'  || e.key==='ArrowUp'  ){ e.preventDefault(); selectSeg(segs[Math.max(idx-1, 0)].value, true); }
+      });
 
-  function getCurrentIds(){ return stepGroups[idx] || []; }
-  function isSummary(){ return getCurrentIds().includes('summary'); }
-
-  function showStep(i){
-    idx = Math.max(0, Math.min(i, stepGroups.length-1));
-    // tüm step section'ları gizle
-    $$('.step').forEach(s=>s.classList.add('hidden'));
-    // bu adımda görünmesi gerekenleri aç
-    getCurrentIds().forEach(id=>{
-      const el = document.getElementById(`step-${id}`);
-      if(el) el.classList.remove('hidden');
+      range.appendChild(b);
+      segButtons.push(b);
     });
 
-    // buton metinleri
-    const lastBeforeSummary = stepGroups.length-2;
-    btnBack.disabled = idx===0;
-    btnNext.textContent = idx===lastBeforeSummary ? 'Paket Öner' : (isSummary() ? 'Bitti' : 'Devam Et');
+    wrap.appendChild(ticks);
+    wrap.appendChild(range);
+    container.appendChild(wrap);
 
-    // başlık ve ilerleme
-    const totalCount = stepGroups.length-1; // summary hariç
-    const shownIndex = Math.min(idx+1, totalCount);
-    const groupLabel = getCurrentIds().includes('summary')
-      ? 'Özet'
-      : getCurrentIds().map(id=>labels[id]).join(' + ');
-    stepLabel.textContent = `Adım ${Math.min(shownIndex,totalCount)}/${totalCount}: ${groupLabel}`;
-    const pct = Math.round((Math.min(idx,totalCount-1)+1)/totalCount*100);
-    progressBar.style.width = pct+'%';
-
-    // odak
-    const first = document.querySelector(getCurrentIds().map(id=>`#step-${id} input, #step-${id} select, #step-${id} textarea, #step-${id} button`).join(', '));
-    first?.focus();
-  }
-
-  function canProceed(){
-    const ids = getCurrentIds();
-    if(ids.includes('kimlik') && !isKimlikValid()) return false;
-    if(ids.includes('trafik') && !isTrafikValid()) return false;
-    return true;
-  }
-
-  btnNext.addEventListener('click',()=>{
-    const lastBeforeSummary = stepGroups.length-2;
-
-    if(idx===lastBeforeSummary){
-      const rec = getPackageSuggestion();
-      localStorage.setItem(stateKey+':pkg', JSON.stringify(rec));
-      buildSummary(rec);
-      showStep(idx+1);
-      return;
-    }
-
-    if(isSummary()) return;
-
-    if(!canProceed()){
-      // basit vurgulu doğrulama
-      getCurrentIds().forEach(id=>{
-        const section = document.getElementById(`step-${id}`);
-        section?.querySelectorAll('select[required], input[required]').forEach(el=>{
-          if(!el.value) el.style.outline='2px solid var(--warn)'; else el.style.outline='';
-        });
+    function selectSeg(value, focus=false){
+      temsilciCount.value = value;
+      const selIndex = segs.findIndex(x => x.value === value);
+      const pct = selIndex >= 0 ? ((selIndex+1)/segs.length)*100 : 0;
+      fill.style.width = pct + '%';
+      segButtons.forEach((btn,i)=>{
+        btn.setAttribute('aria-checked', (i===selIndex) ? 'true' : 'false');
       });
-      return;
+      if (focus && selIndex >= 0) segButtons[selIndex].focus();
     }
 
-    persist();
-    showStep(idx+1);
-  });
+    // İlk yükleme
+    selectSeg(temsilciCount.value || '');
+  }
 
-  btnBack.addEventListener('click',()=> showStep(idx-1));
-
-  // Enter = ileri, Shift+Enter = geri
-  form.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' && !['TEXTAREA'].includes(e.target.tagName)){
-      e.preventDefault();
-      if(e.shiftKey) btnBack.click(); else btnNext.click();
-    }
-  });
-
-  // Bireysel/kurumsal alanlarını değiştir
-  customerType.addEventListener('change', ()=>{
-    const isBireysel = customerType.value==='bireysel';
-    bireyselFields.style.display = isBireysel? 'grid':'none';
-    kurumsalFields.style.display = isBireysel? 'none':'grid';
-  });
-
-  // ---- Özet / dışa aktar ----
+  // ---- Özet / dışa aktar
   function buildSummary(rec){
     const data = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(cb => cb.dataset.label);
@@ -403,8 +472,8 @@
 
     const parts = [];
     parts.push(`<div><strong>Başvuru Tipi:</strong> ${esc(payload.customerType)}</div>`);
-    if (payload.fullName) parts.push(`<div><strong>İsim:</strong> ${esc(payload.fullName)}</div>`);
-    if (payload.companyName) parts.push(`<div><strong>Şirket:</strong> ${esc(payload.companyName)}</div>`);
+    if (payload.fullName)   parts.push(`<div><strong>İsim:</strong> ${esc(payload.fullName)}</div>`);
+    if (payload.companyName)parts.push(`<div><strong>Şirket:</strong> ${esc(payload.companyName)}</div>`);
     parts.push(`<div><strong>Aylık Mesaj:</strong> ${esc(payload.monthlyMessages || '—')}</div>`);
     parts.push(`<div><strong>Temsilci:</strong> ${esc(payload.temsilciCount || '—')}</div>`);
 
@@ -429,28 +498,29 @@
   }
 
   function download(filename, content, type='text/plain'){
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([content],{type}));
-    a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], {type}));
+    a.download = filename; a.click();
+    URL.revokeObjectURL(a.href);
   }
-  $('#copyBtn')?.addEventListener('click',()=>{
+  document.getElementById('copyBtn')?.addEventListener('click', () => {
     const txt = document.getElementById('summaryText').textContent || '';
     navigator.clipboard?.writeText(txt);
   });
-  $('#jsonBtn')?.addEventListener('click',()=>{
+  document.getElementById('jsonBtn')?.addEventListener('click', () => {
     const data = collect();
-    download('ccpilot-summary.json', JSON.stringify(data,null,2), 'application/json');
+    download('ccpilot-summary.json', JSON.stringify(data, null, 2), 'application/json');
   });
-  $('#csvBtn')?.addEventListener('click',()=>{
+  document.getElementById('csvBtn')?.addEventListener('click', () => {
     const data = collect();
     const rows = [
       ['customerType','fullName','companyName','monthlyMessages','temsilciCount','features'],
       [data.customerType||'',data.fullName||'',data.companyName||'',data.monthlyMessages||'',data.temsilciCount||'',(data.features||[]).join(';')]
     ];
-    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); // satır sonu eklendi
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     download('ccpilot-summary.csv', csv, 'text/csv');
   });
-  $('#shareBtn')?.addEventListener('click',()=>{
+  document.getElementById('shareBtn')?.addEventListener('click', () => {
     const data = collect();
     const url = new URL(location.href);
     url.hash = 'd=' + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -460,7 +530,7 @@
 
   function collect(){
     const data = new FormData(form);
-    const features = $$('input[name="features[]"]:checked').map(cb=>cb.dataset.label);
+    const features = $$('input[name="features[]"]:checked').map(cb => cb.dataset.label);
     return {
       customerType: data.get('customerType'),
       fullName: data.get('fullName'),
@@ -471,11 +541,11 @@
     };
   }
 
-  // ---- Kalıcılık ----
+  // ---- Kalıcılık
   function persist(){ localStorage.setItem(stateKey, JSON.stringify(collect())); }
   function restore(){
     try{
-      const saved = JSON.parse(localStorage.getItem(stateKey)||'null');
+      const saved = JSON.parse(localStorage.getItem(stateKey) || 'null');
       if(!saved) return;
       Object.entries(saved).forEach(([k,v])=>{
         const el = form.elements.namedItem(k);
@@ -484,8 +554,8 @@
         if(Array.isArray(el)) return;
         if(el.type==='checkbox') el.checked = !!v; else el.value = v ?? '';
       });
-      const features = saved.features||[];
-      $$('input[name="features[]"]').forEach(cb=>{cb.checked = features.includes(cb.dataset.label)});
+      const features = saved.features || [];
+      $$('input[name="features[]"]').forEach(cb => { cb.checked = features.includes(cb.dataset.label); });
     }catch(_){/* noop */}
   }
 
@@ -498,7 +568,11 @@
       localStorage.setItem(stateKey, json);
     }catch(_){/* noop */}
   })();
-  initMonthlyMessagesSlider();
+
+  // ---- Başlat
   restore();
+  initMonthlyMessagesSlider();
+  initAgentCountSlider();
   showStep(0);
+
 })();
