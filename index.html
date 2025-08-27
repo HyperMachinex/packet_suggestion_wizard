@@ -1,0 +1,229 @@
+<!-- index.html (v1) -->
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CCpilot Plan Destek Formu</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="container header-wrap">
+      <div class="title">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>CCpilot Plan Destek Formu</h1>
+          <div class="muted">Adım adım ilerleyen sihirbaz ile size uygun paketi bulalım.</div>
+        </div>
+      </div>
+      <div class="toolbar">
+
+        <div class="step-indicator" aria-live="polite"><span id="stepLabel">Adım 1/11: Bilgiler</span></div>
+      </div>
+    </div>
+    <div class="progress"><div id="progressBar" class="progress-bar" style="width:10%"></div></div>
+  </header>
+
+  <main class="container">
+    <form id="featureForm" action="/api/needs" method="post" novalidate>
+      <input type="hidden" name="csrf_token" id="csrf_token" value="" />
+
+      <!-- STEP 1: Başvuru Tipi + Bilgiler -->
+      <section class="step" id="step-kimlik" data-step="kimlik">
+        <div class="card">
+          <label for="customerType">Başvuru Tipi:</label>
+          <select id="customerType" name="customerType">
+            <option value="bireysel" selected>Bireysel</option>
+            <option value="kurumsal">Kurumsal</option>
+          </select>
+        </div>
+
+        <details class="card" open>
+          <summary><strong>Bilgiler</strong></summary>
+
+          <!-- Bireysel Fields -->
+          <div id="bireyselFields" class="grid cols-2">
+            <div>
+              <label for="fullName">İsim Soyisim*</label>
+              <input id="fullName" name="fullName" type="text" placeholder="Örn: Ahmet Yılmaz" required autocomplete="name" />
+            </div>
+            <div>
+              <label for="website">Web Sitesi (Opsiyonel)</label>
+              <input id="website" name="website" type="url" placeholder="https://..." autocomplete="url" />
+            </div>
+            <div>
+              <label for="industry">Sektör</label>
+              <input id="industry" name="industry" type="text" placeholder="Örn: Freelance, Danışmanlık" />
+            </div>
+            <div>
+              <label for="email">E-posta</label>
+              <input id="email" name="email" type="email" placeholder="ornek@email.com" autocomplete="email" />
+            </div>
+            <div>
+              <label for="phoneBireysel">Telefon Numarası</label>
+              <input id="phoneBireysel" name="phoneBireysel" type="tel" placeholder="+90 5xx xxx xx xx" autocomplete="tel" />
+            </div>
+          </div>
+
+          <!-- Kurumsal Fields -->
+          <div id="kurumsalFields" class="grid cols-2" style="display: none;">
+            <div>
+              <label for="companyName">Şirket Adı*</label>
+              <input id="companyName" name="companyName" type="text" placeholder="Örn: ABC Teknoloji Ltd." required autocomplete="organization" />
+            </div>
+            <div>
+              <label for="contactName">İletişim Kişisi</label>
+              <input id="contactName" name="contactName" type="text" placeholder="Örn: Ahmet Yılmaz" autocomplete="name" />
+            </div>
+            <div>
+              <label for="websiteCorp">Web Sitesi</label>
+              <input id="websiteCorp" name="websiteCorp" type="url" placeholder="https://..." autocomplete="url" />
+            </div>
+            <div>
+              <label for="industryCorp">Sektör</label>
+              <input id="industryCorp" name="industryCorp" type="text" placeholder="Örn: Enerji, E-Ticaret, SaaS" />
+            </div>
+            <div>
+              <label for="emailCorp">E-posta</label>
+              <input id="emailCorp" name="emailCorp" type="email" placeholder="ornek@firma.com" autocomplete="email" />
+            </div>
+            <div>
+              <label for="phone">Telefon Numarası</label>
+              <input id="phone" name="phone" type="tel" placeholder="+90 5xx xxx xx xx" autocomplete="tel" />
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <!-- STEP 2: Trafik (Aylık Mesaj & Temsilci) -->
+      <section class="step hidden" id="step-trafik" data-step="trafik">
+        <div class="card">
+          <label for="monthlyMessages">Aylık Mesaj Sayısı:</label>
+          <select id="monthlyMessages" name="monthlyMessages" required>
+            <option value="">Seçiniz...</option>
+            <option value="0-1000">0-1,000</option>
+            <option value="1000-10000">1,000-10,000</option>
+            <option value="10k-100k">10,000-100,000</option>
+            <option value="1m+">100,000+</option>
+          </select>
+        </div>
+        <div class="card">
+          <label for="temsilciCount">Temsilci Sayısı:</label>
+          <select id="temsilciCount" name="temsilciCount" required>
+            <option value="">Seçiniz...</option>
+            <option value="1-2">1-2</option>
+            <option value="3-5">3-5</option>
+            <option value="6-10">6-10</option>
+            <option value="11-20">11-20</option>
+            <option value="20+">20+</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- STEP 3..9: Özellik Grupları -->
+      <section class="step hidden" id="step-kanal" data-step="kanal">
+        <details class="card" open>
+          <summary><strong>Kanallar & Entegrasyonlar</strong> <span class="muted-row">(Facebook, Instagram, WhatsApp...)</span></summary>
+          <fieldset style="margin-top:10px">
+            <legend>Mesaj Kanalları</legend>
+            <div class="grid cols-2" id="grp-kanal"></div>
+          </fieldset>
+          <fieldset style="margin-top:10px">
+            <legend>Mobil & Telefon</legend>
+            <div class="grid cols-2" id="grp-mobil"></div>
+          </fieldset>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-sohbet" data-step="sohbet">
+        <details class="card" open>
+          <summary><strong>Sohbet Deneyimi</strong> <span class="muted-row">(Pencere, dosya, yazım, çoklu temsilci...)</span></summary>
+          <fieldset style="margin-top:10px">
+            <legend>Sohbet Penceresi</legend>
+            <div class="grid cols-2" id="grp-pencere"></div>
+          </fieldset>
+          <fieldset style="margin-top:10px">
+            <legend>Agent & Mesaj</legend>
+            <div class="grid cols-2" id="grp-agent"></div>
+          </fieldset>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-ziyaret" data-step="ziyaret">
+        <details class="card" open>
+          <summary><strong>Ziyaretçi İzleme & Yönlendirme</strong></summary>
+          <div class="grid cols-2" id="grp-ziyaret"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-ai" data-step="ai">
+        <details class="card" open>
+          <summary><strong>Chatbot & Yapay Zeka</strong></summary>
+          <div class="grid cols-2" id="grp-ai"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-marketing" data-step="marketing">
+        <details class="card" open>
+          <summary><strong>Pazarlama & Analitik</strong></summary>
+          <div class="grid cols-2" id="grp-marketing"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-operasyon" data-step="operasyon">
+        <details class="card" open>
+          <summary><strong>Operasyon & Ekip Yönetimi</strong></summary>
+          <div class="grid cols-2" id="grp-operasyon"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-crm" data-step="crm">
+        <details class="card" open>
+          <summary><strong>CRM & Sipariş</strong></summary>
+          <div class="grid cols-2" id="grp-crm"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-dev" data-step="dev">
+        <details class="card" open>
+          <summary><strong>Geliştirici & API</strong></summary>
+          <div class="grid cols-2" id="grp-dev"></div>
+        </details>
+      </section>
+
+      <section class="step hidden" id="step-security" data-step="security">
+        <details class="card" open>
+          <summary><strong>Güvenlik & Uyum</strong></summary>
+          <div class="grid cols-2" id="grp-security"></div>
+        </details>
+      </section>
+
+      <!-- STEP 10: Özet -->
+      <section class="step hidden" id="step-summary" data-step="summary">
+        <section class="summary">
+          <h3>Teklif Özeti</h3>
+          <pre id="summaryText"></pre>
+          <div class="btn-row">
+            <button id="copyBtn" type="button" class="btn">Özeti Kopyala</button>
+            <button id="jsonBtn" type="button" class="btn">JSON indir</button>
+            <button id="csvBtn" type="button" class="btn">CSV indir</button>
+            <button id="shareBtn" type="button" class="btn">Paylaşılabilir Bağlantı</button>
+          </div>
+        </section>
+      </section>
+
+      <!-- Wizard Navigation -->
+      <div class="wizard-nav">
+        <button type="button" id="btnBack" class="btn" aria-label="Geri" disabled>Geri</button>
+        <div class="spacer"></div>
+        <button type="button" id="btnNext" class="btn primary">Devam Et</button>
+      </div>
+    </form>
+
+    <p class="footer">Hazırlayan: <strong>Hyper Machine</strong> • <span class="muted">Form yanıtları cihazında saklanır (localStorage). İstemci tarafı.</span></p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
