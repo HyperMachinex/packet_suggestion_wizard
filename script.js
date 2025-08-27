@@ -179,6 +179,49 @@
     return true;
   }
 
+    // ---- "Boş olamaz" validator'ı ----
+  function validateRequiredNotEmpty(el){
+    if(!el) return true;
+    clearFieldError(el);
+    const v = (el.value || '').trim();
+    if(!v){
+      setFieldError(el, 'Bu alan boş bırakılamaz.');
+      return false;
+    }
+    return true;
+  }
+
+  // ---- Kimlik adımı ekstra doğrulama (bireysel/kurumsal alanları) ----
+  function validateIdentityExtrasOnStep(){
+    const ids = getCurrentIds();
+    if(!ids.includes('kimlik')) return true;  // sadece kimlik adımında çalış
+
+    const isBireysel = customerType.value === 'bireysel';
+
+    if(isBireysel){
+      const industryEl = document.getElementById('industry');
+      const okName = validateRequiredNotEmpty(fullNameInput);
+      const okInd  = validateRequiredNotEmpty(industryEl);
+      if(!okName) fullNameInput?.focus();
+      else if(!okInd) industryEl?.focus();
+      return okName && okInd;
+    }else{
+      const contactEl = document.getElementById('contactName');
+      const sectorEl  = document.getElementById('industryCorp');
+
+      const okCompany = validateRequiredNotEmpty(companyNameInput);
+      const okContact = validateRequiredNotEmpty(contactEl);
+      const okSector  = validateRequiredNotEmpty(sectorEl);
+
+      if(!okCompany) companyNameInput?.focus();
+      else if(!okContact) contactEl?.focus();
+      else if(!okSector)  sectorEl?.focus();
+
+      return okCompany && okContact && okSector;
+    }
+  }
+
+
   // Kimlik adımında temas bilgilerini doğrula
   function validateContactsOnStep(){
     const ids = getCurrentIds();
@@ -285,6 +328,11 @@
   }
 
   btnNext.addEventListener('click', () => {
+        // Kimlik adımında boş alan kontrolü
+    if(!validateIdentityExtrasOnStep()) return;
+
+    // Kimlik adımında e-posta/telefon format kontrolü (doluysa format)
+    if(!validateContactsOnStep()) return;
     if(!validateContactsOnStep()) return;
     const lastBeforeSummary = stepGroups.length - 2;
 
