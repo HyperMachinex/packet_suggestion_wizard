@@ -506,7 +506,7 @@
 
     .ac-wrap{ margin-top:8px; position:relative; padding-top:22px; }
     .ac-range{
-      position:relative; display:grid; grid-template-columns:repeat(5,1fr);
+      position:relative; display:grid; grid-template-columns:repeat(4,1fr);
       border:none; box-shadow: inset 0 0 0 2px var(--pill-border); /* dışı full beyaz */
       border-radius:9999px; overflow:hidden; background:#0d1017;
     }
@@ -546,10 +546,9 @@
 
     const segs = [
       { value:'1-2',   label:'2'   },
-      { value:'3-5',   label:'5'   },
-      { value:'6-10',  label:'10'  },
-      { value:'11-20', label:'20'  },
-      { value:'20+',   label:'20+' }
+      { value:'3-10',   label:'10'   },
+      { value:'11-100',  label:'100'  },
+      { value:'100+',   label:'100+' }
     ];
 
     const tickHtml = segs.map((s,i)=>{
