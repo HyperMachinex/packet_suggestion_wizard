@@ -832,9 +832,9 @@ const payload = {
     const data = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(cb => cb.dataset.label);
     return {
-      customerType: data.get('customerType'),
-      fullName: data.get('fullName'),
-      companyName: data.get('companyName'),
+      customerType: capitalizeFirstTR(data.get('customerType')),
+      fullName: titleCaseTR(data.get('fullName')),
+      companyName: titleCaseTR(data.get('companyName')),
       monthlyMessages: data.get('monthlyMessages'),
       temsilciCount: data.get('temsilciCount'),
       features

@@ -11,3 +11,4 @@ motor
 jose
 datetime
 typing
+aiosmtplib
