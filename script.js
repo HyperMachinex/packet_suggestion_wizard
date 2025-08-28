@@ -28,7 +28,7 @@
   // 3) kanal
   // 4) sohbet
   // 5) ziyaret + crm
-  // 6) ai + marketing
+  // 6) ai
   // 7) operasyon + dev + security  ← burada "Paket Öner" tetiklenir
   // 8) summary
   const stepGroups = [
@@ -36,8 +36,8 @@
     ['trafik'],
     ['kanal'],
     ['sohbet'],
-    ['ziyaret', 'crm'],
-    ['ai', 'marketing'],
+    ['ziyaret'],
+    ['ai', 'crm'],
     ['operasyon', 'dev', 'security'],
     ['summary'],
   ];
@@ -49,7 +49,6 @@
     sohbet:   'Sohbet',
     ziyaret:  'Ziyaretçi',
     ai:       'Yapay Zeka',
-    marketing:'Pazarlama',
     operasyon:'Operasyon',
     crm:      'CRM',
     dev:      'Geliştirici',
@@ -58,6 +57,7 @@
   };
 
   // ---- Dinamik özellik listeleri (placeholder)
+  /*
   const RAW_GROUPS = {
     kanal: [
       'Facebook, Instagram, Viber, Telegram Entegrasyonları',
@@ -86,7 +86,44 @@
     dev: ['Webhook'],
     security: ['IP kısıtlama','2FA','KVKK uyumu'],
   };
-
+  */
+  const RAW_GROUPS = {
+    kanal: [ // ok
+      'Facebook, Instagram, Viber, Telegram Entegrasyonları',
+      'Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)',
+      'Apple Business Chat',
+      "Facebook, Instagram ve Telegram'da Sesli Mesajlar",
+    ],
+    mobil: [ // ok
+      'Mobil Uygulama SDK','Telefon+ Modülü','Görüntülü Görüşme Modülü', 'Something'
+    ],
+    pencere: [ // ok
+      'Sohbet öncesi butonlar','Dosya gönderme-alma',
+      'Mobil cihazlara uygun sohbet penceresi','Gönderim sonrası yanıt düzenleme',
+    ],
+    ziyaret: [ // ok
+      'Akıllı yönlendirme', 'Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
+      'Kampanya tetikleyici', 'E-posta entegrasyonu',
+    ],
+    ai: [ // ok
+      'Soru-cevap botu','Özet çıkarma', 'Yazım denetimi',
+    ],
+    agent: [ // ok
+      'Taslak cevaplar','Çoklu temsilcili sohbetler','Temsilci atama',
+    ],
+    security: [ // ok
+      'IP kısıtlama','2FA','KVKK uyumu'
+    ],
+    operasyon: [ // ok
+      'Vardiya planlama','Yetkilendirme','Onay akışları'
+    ],
+    crm: [ // ok
+      'Müşteri profili','Sipariş senkronizasyonu','Fatura entegrasyonu',
+    ],
+    dev: [ // ok
+      'Webhook', 'Raporlama API', "Excel'e veri dökümü alma",
+    ],
+  };
   function slugify(s){
     return s.toLowerCase()
       .normalize('NFKD')
@@ -110,7 +147,6 @@
   renderGroup('grp-agent',     RAW_GROUPS.agent);
   renderGroup('grp-ziyaret',   RAW_GROUPS.ziyaret);
   renderGroup('grp-ai',        RAW_GROUPS.ai);
-  renderGroup('grp-marketing', RAW_GROUPS.marketing);
   renderGroup('grp-operasyon', RAW_GROUPS.operasyon);
   renderGroup('grp-crm',       RAW_GROUPS.crm);
   renderGroup('grp-dev',       RAW_GROUPS.dev);
