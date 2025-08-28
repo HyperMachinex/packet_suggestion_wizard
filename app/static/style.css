@@ -216,3 +216,90 @@ input,select{
     margin-bottom: 20px;
 }
   
+/* Feature cards specific styling */
+.feature-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin:8px 0;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 60px;
+    box-sizing: border-box;
+}
+
+.feature-card:hover {
+    border-color: var(--brand);
+    background: #0f1520;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.feature-card input[type="checkbox"] {
+    margin: 0;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
+
+.feature-card .feature-text {
+    flex: 1;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Ensure proper spacing for feature sections */
+.feature-section {
+    margin-bottom: 24px;
+}
+
+.feature-section details {
+    margin-bottom: 16px;
+}
+
+.feature-section summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-weight: 600;
+    color: var(--brand);
+    font-size: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.feature-section summary:hover {
+    color: var(--text);
+}
+
+.feature-section summary strong {
+    font-weight: 700;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .feature-card {
+        min-height: 50px;
+        padding: 12px;
+    }
+    
+    .feature-card .feature-text {
+        font-size: 13px;
+    }
+}
+  
