@@ -32,12 +32,9 @@
   // 7) operasyon + dev + security  ← burada "Paket Öner" tetiklenir
   // 8) summary
   const stepGroups = [
-    ['kimlik'],
-    ['trafik'],
-    ['kanal-msg', 'sohbet-pencere'],
-    ['ziyaret', 'kanal-mobil'],
-    ['ai', 'crm', 'sohbet-agent'],
-    ['operasyon', 'dev', 'security'],
+    ['kimlik', 'trafik'],
+    ['kanal-msg', 'sohbet-pencere', 'ai', 'crm', 'sohbet-agent'],
+    ['ziyaret', 'kanal-mobil', 'operasyon', 'dev', 'security'],
     ['summary'],
   ];
 
