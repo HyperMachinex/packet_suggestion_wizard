@@ -121,31 +121,35 @@
       </section>
 
       <!-- STEP 3..9: Özellik Grupları -->
-      <section class="step hidden" id="step-kanal" data-step="kanal">
+      <!-- Mesaj Kanalları -->
+      <section class="step hidden" id="step-kanal-msg" data-step="kanal-msg">
         <details class="card" open>
-          <summary><strong>Kanallar & Entegrasyonlar</strong> <span class="muted-row">(Facebook, Instagram, WhatsApp...)</span></summary>
-          <fieldset style="margin-top:10px">
-            <legend>Mesaj Kanalları</legend>
-            <div class="grid cols-2" id="grp-kanal"></div>
-          </fieldset>
-          <fieldset style="margin-top:10px">
-            <legend>Mobil & Telefon</legend>
-            <div class="grid cols-2" id="grp-mobil"></div>
-          </fieldset>
+          <summary><strong>Mesaj Kanalları</strong></summary>
+          <div class="grid cols-2" id="grp-kanal"></div>
         </details>
       </section>
 
-      <section class="step hidden" id="step-sohbet" data-step="sohbet">
+      <!-- Mobil & Telefon -->
+      <section class="step hidden" id="step-kanal-mobil" data-step="kanal-mobil">
         <details class="card" open>
-          <summary><strong>Sohbet Deneyimi</strong> <span class="muted-row">(Pencere, dosya, yazım, çoklu temsilci...)</span></summary>
-          <fieldset style="margin-top:10px">
-            <legend>Sohbet Penceresi</legend>
-            <div class="grid cols-2" id="grp-pencere"></div>
-          </fieldset>
-          <fieldset style="margin-top:10px">
-            <legend>Agent & Mesaj</legend>
-            <div class="grid cols-2" id="grp-agent"></div>
-          </fieldset>
+          <summary><strong>Mobil & Telefon</strong></summary>
+          <div class="grid cols-2" id="grp-mobil"></div>
+        </details>
+      </section>
+
+      <!-- Sohbet Penceresi -->
+      <section class="step hidden" id="step-sohbet-pencere" data-step="sohbet-pencere">
+        <details class="card" open>
+          <summary><strong>Sohbet Penceresi</strong></summary>
+          <div class="grid cols-2" id="grp-pencere"></div>
+        </details>
+      </section>
+
+      <!-- Agent & Mesaj -->
+      <section class="step hidden" id="step-sohbet-agent" data-step="sohbet-agent">
+        <details class="card" open>
+          <summary><strong>Agent & Mesaj</strong></summary>
+          <div class="grid cols-2" id="grp-agent"></div>
         </details>
       </section>
 
@@ -216,7 +220,8 @@
       <div class="wizard-nav">
         <button type="button" id="btnBack" class="btn" aria-label="Geri" disabled>Geri</button>
         <div class="spacer"></div>
-        <button type="button" id="btnNext" class="btn primary">Devam Et</button>
+        <button type="button" id="btnContact" class="btn">Size ulaşmamızı ister misiniz?</button>
+        <button type="button" id="btnNext" class="btn primary">Bitti</button>
       </div>
     </form>
 
@@ -224,5 +229,13 @@
   </main>
 
   <script src="script.js"></script>
+
+  <!-- Contact Modal -->
+  <div id="contactModal" class="modal hidden">
+    <div class="modal-content">
+      <p>Ekiplerimiz size 24 saat içinde ulaşacaktır.</p>
+      <button id="closeContactModal" class="btn primary">Tamam</button>
+    </div>
+  </div>
 </body>
 </html>

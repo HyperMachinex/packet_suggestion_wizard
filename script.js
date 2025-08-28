@@ -34,26 +34,27 @@
   const stepGroups = [
     ['kimlik'],
     ['trafik'],
-    ['kanal'],
-    ['sohbet'],
-    ['ziyaret'],
-    ['ai', 'crm'],
+    ['kanal-msg', 'sohbet-pencere'],
+    ['ziyaret', 'kanal-mobil'],
+    ['ai', 'crm', 'sohbet-agent'],
     ['operasyon', 'dev', 'security'],
     ['summary'],
   ];
 
   const labels = {
-    kimlik:   'Bilgiler',
-    trafik:   'Trafik',
-    kanal:    'Kanallar',
-    sohbet:   'Sohbet',
-    ziyaret:  'Ziyaretçi',
-    ai:       'Yapay Zeka',
-    operasyon:'Operasyon',
-    crm:      'CRM',
-    dev:      'Geliştirici',
+    kimlik: 'Bilgiler',
+    trafik: 'Trafik',
+    'kanal-msg': 'Mesaj Kanalları',
+    'kanal-mobil': 'Mobil & Telefon',
+    'sohbet-pencere': 'Sohbet Penceresi',
+    'sohbet-agent': 'Agent & Mesaj',
+    ziyaret: 'Ziyaretçi',
+    ai: 'Yapay Zeka',
+    operasyon: 'Operasyon',
+    crm: 'CRM',
+    dev: 'Geliştirici',
     security: 'Güvenlik',
-    summary:  'Özet',
+    summary: 'Özet',
   };
 
   // ---- Dinamik özellik listeleri (placeholder)
@@ -286,7 +287,7 @@
     }
 
     // 2) Kurumsal özellikler tetikler
-    const enterpriseFeatures = ['Mobil Uygulama SDK','Sohbet yönlendirme','Görüntülü Görüşme Modülü'];
+    const enterpriseFeatures = ['Mobil Uygulama SDK','Görüntülü Görüşme Modülü'];
     if (enterpriseFeatures.some(has)) {
       const chosen = enterpriseFeatures.filter(has).join(', ');
       return { pkg:'Kurumsal Paket', desc:'Kurumsal özellikler seçildiği için', reason:`Seçilen kurumsal özellik(ler): ${chosen}` };
@@ -299,17 +300,23 @@
     }
 
     // 4) Premium özellikleri
-    const premiumFeatures = ['Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)', "Facebook, Instagram ve Telegram'da Sesli Mesajlar"];
+    const premiumFeatures = [ 'Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)', "Facebook, Instagram ve Telegram'da Sesli Mesajlar", 
+                              "Apple Business Chat", 'Telefon+ Modülü', 'Temsilci atama', 'Akıllı yönlendirme', 'Özet çıkarma', 'Kampanya tetikleyici',
+                              'E-posta entegrasyonu', 'Raporlama API', 'Yetkilendirme', 'Onay akışları', 'Sipariş senkronizasyonu', 'Webhook', '2FA'  ];
     if (premiumFeatures.some(has)) {
       const chosen = premiumFeatures.filter(has).join(', ');
       return { pkg:'Premium Paket', desc:'Gelişmiş kanal özellikleri', reason:`Seçilen: ${chosen}` };
     }
 
+    if (monthly === '1k-10k') {
+      return { pkg:'Profesyonel Paket', desc:'1K-10K aylık mesaj hacmi', reason:'Hacim temelli öneri' };
+    }
+
     // 5) Pro özellikleri
     const proFeatures = [
       'Sohbet öncesi butonlar','Dosya gönderme-alma','Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
-      "Excel'e veri dökümü alma",'Müşteri profili','Kampanya tetikleyici','Raporlama API'
-    ];
+      "Excel'e veri dökümü alma",'Müşteri profili', 'Gönderim sonrası yanıt düzenleme', 'Yazım denetimi', 'Taslak cevaplar', 'Çoklu temsilcili sohbetler',
+      'Soru-cevap botu', 'Vardiya planlama', 'Fatura entegrasyonu', 'IP kısıtlama'];
     if (proFeatures.some(has)) {
       const chosen = proFeatures.filter(has).join(', ');
       return { pkg:'Profesyonel Paket', desc:'Gelişmiş işlevler seçildi', reason:`Seçilen: ${chosen}` };
@@ -317,11 +324,11 @@
 
     // 6) Ücretsiz: düşük hacim + küçük ekip
     if (agent==='1-2' && monthly==='0-1000') {
-      return { pkg:'Ücretsiz Paket', desc:'Düşük hacim ve küçük ekip', reason:'0-1K mesaj & 1-2 temsilci' };
+      return { pkg:'Basic Paket', desc:'Düşük hacim ve küçük ekip', reason:'0-1K mesaj & 1-2 temsilci' };
     }
 
     // 7) Varsayılan
-    return { pkg:'Profesyonel Paket', desc:'Varsayılan öneri', reason:'Özellik/ölçek eşiklerine göre orta seviye' };
+    return { pkg:'Basic Paket', desc:'Varsayılan öneri', reason:'Özellik/ölçek eşiklerine göre giriş seviye' };
   }
 
   // ---- Adım makinesi
@@ -341,6 +348,31 @@
     const lastBeforeSummary = stepGroups.length - 2;
     btnBack.disabled   = idx === 0;
     btnNext.textContent = idx === lastBeforeSummary ? 'Paket Öner' : (isSummary() ? 'Bitti' : 'Devam Et');
+
+    let btnContact = document.getElementById('btnContact');
+
+    btnContact.addEventListener('click', () => {
+      document.getElementById('contactModal').classList.remove('hidden');
+    });
+    
+    // Modal kapatma
+    document.getElementById('closeContactModal')?.addEventListener('click', () => {
+      document.getElementById('contactModal').classList.add('hidden');
+    });
+
+    if(isSummary()){
+      if(!btnContact){
+        btnContact = document.createElement('button');
+        btnContact.type = 'button';
+        btnContact.id = 'btnContact';
+        btnContact.className = 'btn';
+        btnContact.textContent = 'Size ulaşmamızı ister misiniz?';
+        btnNext.parentNode.insertBefore(btnContact, btnNext);
+      }
+      btnContact.style.display = 'inline-block';
+    } else {
+      if(btnContact) btnContact.style.display = 'none';
+    }
 
     // İlerleme & başlık
     const totalCount = stepGroups.length - 1;
@@ -633,20 +665,38 @@
     // İlk yükleme
     selectSeg(temsilciCount.value || '');
   }
+    // TR-dostu: string'in sadece ilk harfini büyütür (kalanı aynen bırakır)
+  const capitalizeFirstTR = (s) => {
+    if (!s) return undefined;
+    s = String(s).trim();
+    if (!s) return undefined;
+    return s.charAt(0).toLocaleUpperCase('tr-TR') + s.slice(1);
+  };
 
+  // (İsteğe bağlı) Şirket adlarını her kelimenin baş harfi büyük yapayım dersen:
+  const titleCaseTR = (s) => {
+    if (!s) return undefined;
+    return String(s)
+      .trim()
+      .split(/\s+/)
+      .map(w => w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1))
+      .join(' ');
+  };
   // ---- Özet / dışa aktar
   function buildSummary(rec){
     const data = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(cb => cb.dataset.label);
 
-    const payload = {
-      customerType: data.get('customerType'),
-      fullName: data.get('fullName') || undefined,
-      companyName: data.get('companyName') || undefined,
-      monthlyMessages: data.get('monthlyMessages'),
-      temsilciCount: data.get('temsilciCount'),
-      features
-    };
+    
+const payload = {
+  customerType: capitalizeFirstTR(data.get('customerType')),
+  fullName: titleCaseTR((data.get('fullName') || '').trim() || undefined),
+  // Sadece ilk harf büyüsün istersen: capitalizeFirstTR(data.get('companyName'))
+  companyName: titleCaseTR(data.get('companyName')),
+  monthlyMessages: data.get('monthlyMessages'),
+  temsilciCount: data.get('temsilciCount'),
+  features
+};
 
     const recommendation =
       rec ||
