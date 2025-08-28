@@ -76,14 +76,14 @@
       'Yazım denetimi','Taslak cevaplar','Çoklu temsilcili sohbetler','Temsilci atama',
     ],
     ziyaret: [
-      'Ziyaretçi ısı haritası','Kaynak/utm takibi','Akıllı yönlendirme',
+      'Akıllı yönlendirme',
       'Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
     ],
-    ai: ['Soru-cevap botu','Özet çıkarma','Duygu analizi'],
+    ai: ['Soru-cevap botu','Özet çıkarma'],
     marketing: ['Kampanya tetikleyici','E-posta entegrasyonu','Raporlama API'],
     operasyon: ['Vardiya planlama','Yetkilendirme','Onay akışları'],
     crm: ['Müşteri profili','Sipariş senkronizasyonu','Fatura entegrasyonu',"Excel'e veri dökümü alma"],
-    dev: ['REST API','Webhook','SDK'],
+    dev: ['Webhook'],
     security: ['IP kısıtlama','2FA','KVKK uyumu'],
   };
 
@@ -244,17 +244,18 @@
 
     const has = (label) => !!$$('input[name="features[]"]').find(cb => cb.dataset.label === label && cb.checked);
 
-    // 1) Kurumsal özellikler tetikler
+    // 1) Hacim/ekip eşiği -> Kurumsal (100k+ doğrudan kurumsal)
+    if (['100k+'].includes(monthly) || agent === '100+') {
+      return { pkg:'Kurumsal Paket', desc:'Yüksek trafik/ekip hacmi', reason:'10k+ mesaj veya 100+ temsilci' };
+    }
+
+    // 2) Kurumsal özellikler tetikler
     const enterpriseFeatures = ['Mobil Uygulama SDK','Sohbet yönlendirme','Görüntülü Görüşme Modülü'];
     if (enterpriseFeatures.some(has)) {
       const chosen = enterpriseFeatures.filter(has).join(', ');
       return { pkg:'Kurumsal Paket', desc:'Kurumsal özellikler seçildiği için', reason:`Seçilen kurumsal özellik(ler): ${chosen}` };
     }
 
-    // 2) Hacim/ekip eşiği -> Kurumsal (100k+ doğrudan kurumsal)
-    if (['100k+','100k-1m','1m+'].includes(monthly) || agent === '20+') {
-      return { pkg:'Kurumsal Paket', desc:'Yüksek trafik/ekip hacmi', reason:'100K+ mesaj veya 20+ temsilci' };
-    }
 
     // 3) Premium: 10K-100K
     if (monthly === '10k-100k') {
