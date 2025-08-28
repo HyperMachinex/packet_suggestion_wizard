@@ -351,6 +351,16 @@
 
     let btnContact = document.getElementById('btnContact');
 
+    if (!btnContact.dataset.bound) {
+      btnContact.dataset.bound = '1';
+      btnContact.addEventListener('click', async () => {
+        try {
+          await saveSummary(); // MongoDB'ye kaydet
+        } catch(_) {}
+        document.getElementById('contactModal')?.classList.remove('hidden');
+      });
+    }
+
     btnContact.addEventListener('click', () => {
       document.getElementById('contactModal').classList.remove('hidden');
     });
@@ -765,6 +775,59 @@ const payload = {
     alert('Bağlantı kopyalandı.');
   });
 
+  function getSummaryPayload() {
+    const formEl = document.getElementById('featureForm');
+    const fd = new FormData(formEl);
+  
+    // Seçili özelliklerin LABEL'ları:
+    const features = Array.from(document.querySelectorAll('input[name="features[]"]:checked'))
+      .map(cb => cb.dataset.label);
+  
+    // Intl-Tel için varsa gizli alanlardan E.164:
+    const phoneBireyselFull = formEl.querySelector('input[name="phoneBireysel_full"]')?.value || null;
+    const phoneCorpFull     = formEl.querySelector('input[name="phone_full"]')?.value || null;
+  
+    // Öneri (summary öncesi hesaplanmış oluyor)
+    const recommendation =
+      JSON.parse(localStorage.getItem('ccpilot_wizard_v1:pkg') || 'null') ||
+      { pkg: 'Ücretsiz Paket', desc: '(varsayılan)', reason: '—' };
+  
+    return {
+      // Kimlik
+      customerType: fd.get('customerType') || null,
+  
+      // Bireysel alanları
+      fullName:       fd.get('fullName')      || null,
+      website:        fd.get('website')       || null,
+      industry:       fd.get('industry')      || null,
+      email:          fd.get('email')         || null,
+      phone:          phoneBireyselFull || fd.get('phoneBireysel') || null,
+  
+      // Kurumsal alanları
+      companyName:    fd.get('companyName')   || null,
+      contactName:    fd.get('contactName')   || null,
+      websiteCorp:    fd.get('websiteCorp')   || null,
+      industryCorp:   fd.get('industryCorp')  || null,
+      emailCorp:      fd.get('emailCorp')     || null,
+      phoneCorp:      phoneCorpFull      || fd.get('phone')        || null,
+  
+      // Trafik
+      monthlyMessages: fd.get('monthlyMessages') || null, // slider, <select>’teki değeri güncelliyoruz
+      temsilciCount:   fd.get('temsilciCount')   || null, // slider, <select>’teki değeri güncelliyoruz
+  
+      // Özellikler
+      features,
+  
+      // Öneri
+      recommendation,
+  
+      // CSRF
+      csrf_token: document.getElementById('csrf_token')?.value || null
+    };
+  }
+  
+
+
   function collect(){
     const data = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(cb => cb.dataset.label);
@@ -795,6 +858,31 @@ const payload = {
       $$('input[name="features[]"]').forEach(cb => { cb.checked = features.includes(cb.dataset.label); });
     }catch(_){/* noop */}
   }
+
+  async function saveSummary(){
+    const payload = getSummaryPayload();  // buildSummary yerine JSON payload
+    try {
+      const res = await fetch('/api/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json().catch(()=> ({}));
+      if (typeof toast === 'function') {
+        toast('Basvurunuz kaydedildi • ID: ' + (data.id || '—'));
+      } else {
+        console.log('Basvurunuz kaydedildi • ID:', data.id || '—');
+      }
+      return data;
+    } catch (err) {
+      console.error(err);
+      alert('Kaydetme sırasında bir hata oluştu.');
+      throw err;
+    }
+  }
+  
 
   // Paylaşım linkinden yükleme
   (function importFromHash(){
@@ -971,6 +1059,7 @@ const payload = {
   initIntlTel('phoneBireysel','TR'); // bireysel
   initIntlTel('phone','TR');   
   showStep(0);
+  bindFormSubmit();
 
   
 
