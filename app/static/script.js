@@ -20,8 +20,6 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const stateKey = "ccpilot_wizard_v1";
-
   // --- Adım grupları
   // 1) kimlik
   // 2) trafik
@@ -171,6 +169,21 @@
         </label>`;
       })
       .join("");
+
+    // Initialize visual state for all cards
+    el.querySelectorAll(".feature-card").forEach((card) => {
+      const checkbox = card.querySelector('input[type="checkbox"]');
+      updateCardVisualState(card, checkbox);
+    });
+  }
+
+  // Global function to update card visual state
+  function updateCardVisualState(card, checkbox) {
+    if (checkbox.checked) {
+      card.classList.add("selected");
+    } else {
+      card.classList.remove("selected");
+    }
   }
   renderGroup("grp-kanal", RAW_GROUPS.kanal);
   renderGroup("grp-mobil", RAW_GROUPS.mobil);
@@ -182,6 +195,32 @@
   renderGroup("grp-crm", RAW_GROUPS.crm);
   renderGroup("grp-dev", RAW_GROUPS.dev);
   renderGroup("grp-security", RAW_GROUPS.security);
+
+  // Global event listener for feature cards
+  document.addEventListener("click", (e) => {
+    const featureCard = e.target.closest(".feature-card");
+    if (featureCard) {
+      const checkbox = featureCard.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        // Toggle the checkbox
+        checkbox.checked = !checkbox.checked;
+        // Update visual state
+        updateCardVisualState(featureCard, checkbox);
+        // Trigger change event for form handling
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+  });
+
+  // Also listen for direct checkbox changes
+  document.addEventListener("change", (e) => {
+    if (e.target.type === "checkbox" && e.target.name === "features[]") {
+      const featureCard = e.target.closest(".feature-card");
+      if (featureCard) {
+        updateCardVisualState(featureCard, e.target);
+      }
+    }
+  });
 
   // ---- Doğrulama kuralları
   const requiredByStep = {
@@ -540,7 +579,6 @@
 
     if (idx === lastBeforeSummary) {
       const rec = getPackageSuggestion();
-      localStorage.setItem(stateKey + ":pkg", JSON.stringify(rec));
       buildSummary(rec);
       showStep(idx + 1);
       return;
@@ -562,7 +600,6 @@
       return;
     }
 
-    persist();
     showStep(idx + 1);
   });
 
@@ -870,12 +907,11 @@
       features,
     };
 
-    const recommendation = rec ||
-      JSON.parse(localStorage.getItem(stateKey + ":pkg") || "null") || {
-        pkg: "Ücretsiz Paket",
-        desc: "(varsayılan)",
-        reason: "—",
-      };
+    const recommendation = rec || {
+      pkg: "Ücretsiz Paket",
+      desc: "(varsayılan)",
+      reason: "—",
+    };
 
     const esc = (s) =>
       String(s ?? "").replace(
@@ -1011,9 +1047,11 @@
       formEl.querySelector('input[name="phone_full"]')?.value || null;
 
     // Öneri (summary öncesi hesaplanmış oluyor)
-    const recommendation = JSON.parse(
-      localStorage.getItem("ccpilot_wizard_v1:pkg") || "null"
-    ) || { pkg: "Ücretsiz Paket", desc: "(varsayılan)", reason: "—" };
+    const recommendation = {
+      pkg: "Ücretsiz Paket",
+      desc: "(varsayılan)",
+      reason: "—",
+    };
 
     return {
       // Kimlik
@@ -1064,35 +1102,6 @@
     };
   }
 
-  // ---- Kalıcılık
-  function persist() {
-    localStorage.setItem(stateKey, JSON.stringify(collect()));
-  }
-  function restore() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(stateKey) || "null");
-      if (!saved) return;
-      Object.entries(saved).forEach(([k, v]) => {
-        const el = form.elements.namedItem(k);
-        if (!el) return;
-        if (
-          el instanceof RadioNodeList ||
-          (el.length && el[0]?.type === "radio")
-        )
-          return;
-        if (Array.isArray(el)) return;
-        if (el.type === "checkbox") el.checked = !!v;
-        else el.value = v ?? "";
-      });
-      const features = saved.features || [];
-      $$('input[name="features[]"]').forEach((cb) => {
-        cb.checked = features.includes(cb.dataset.label);
-      });
-    } catch (_) {
-      /* noop */
-    }
-  }
-
   async function saveSummary() {
     const payload = getSummaryPayload(); // buildSummary yerine JSON payload
     try {
@@ -1117,17 +1126,6 @@
     }
   }
 
-  // Paylaşım linkinden yükleme
-  (function importFromHash() {
-    try {
-      const m = location.hash.match(/[#&]d=([^&]+)/);
-      if (!m) return;
-      const json = decodeURIComponent(escape(atob(m[1])));
-      localStorage.setItem(stateKey, json);
-    } catch (_) {
-      /* noop */
-    }
-  })();
   // --- Intl Tel Input (CSS inject) ---
   (function injectIntlTelCSS() {
     if (document.getElementById("intl-tel-style")) return;
@@ -1339,7 +1337,6 @@
     el?.addEventListener("blur", (e) => validatePhoneField(e.target));
   });
   // ---- Başlat
-  restore();
   initMonthlyMessagesSlider();
   initAgentCountSlider();
   initIntlTel("phoneBireysel", "TR"); // bireysel
