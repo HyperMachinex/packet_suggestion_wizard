@@ -32,11 +32,25 @@
       <!-- STEP 1: Başvuru Tipi + Bilgiler -->
       <section class="step" id="step-kimlik" data-step="kimlik">
         <div class="card">
-          <label for="customerType">Başvuru Tipi:</label>
-          <select id="customerType" name="customerType">
+          <label>Başvuru Tipi:</label>
+          
+          <!-- Hidden original select for form compatibility -->
+          <select id="customerType" name="customerType" style="display: none;">
             <option value="bireysel" selected>Bireysel</option>
             <option value="kurumsal">Kurumsal</option>
           </select>
+          
+          <!-- New tab interface -->
+          <div class="customer-type-tabs">
+            <label class="customer-type-tab selected" data-value="bireysel">
+              <input type="radio" name="customerTypeTab" value="bireysel" checked />
+              <span>Bireysel</span>
+            </label>
+            <label class="customer-type-tab" data-value="kurumsal">
+              <input type="radio" name="customerTypeTab" value="kurumsal" />
+              <span>Kurumsal</span>
+            </label>
+          </div>
         </div>
 
         <details class="card" open>
@@ -225,7 +239,7 @@
       </div>
     </form>
 
-    <p class="footer">Hazırlayan: <strong>Hyper Machine</strong> • <span class="muted">Form yanıtları cihazında saklanır.</span></p>
+    <p class="footer">Hazırlayan: <strong>Hyper Machine</strong></p>
   </main>
 
   <script src="../static/script.js"></script>

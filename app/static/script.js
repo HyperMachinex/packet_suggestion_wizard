@@ -20,6 +20,81 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+  // --- Customer Type Tab Functionality ---
+  function initCustomerTypeTabs() {
+    const tabs = document.querySelectorAll(".customer-type-tab");
+
+    // Function to update visual state
+    function updateTabVisualState(selectedValue) {
+      tabs.forEach((tab) => {
+        const tabValue = tab.dataset.value;
+        const radio = tab.querySelector('input[type="radio"]');
+
+        if (tabValue === selectedValue) {
+          tab.classList.add("selected");
+          radio.checked = true;
+        } else {
+          tab.classList.remove("selected");
+          radio.checked = false;
+        }
+      });
+    }
+
+    // Function to show/hide fields
+    function toggleFields(customerType) {
+      const isBireysel = customerType === "bireysel";
+      bireyselFields.style.display = isBireysel ? "grid" : "none";
+      kurumsalFields.style.display = isBireysel ? "none" : "grid";
+    }
+
+    // Function to handle tab selection
+    function selectTab(value) {
+      // Update hidden select for form compatibility
+      customerType.value = value;
+
+      // Update visual state
+      updateTabVisualState(value);
+
+      // Show/hide appropriate fields
+      toggleFields(value);
+
+      // Trigger change event on original select for any existing listeners
+      customerType.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    // Add click listeners to tabs
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", (e) => {
+        e.preventDefault();
+        const value = tab.dataset.value;
+        selectTab(value);
+      });
+
+      // Add keyboard support
+      tab.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const value = tab.dataset.value;
+          selectTab(value);
+        }
+      });
+    });
+
+    // Add change listeners to radio buttons for accessibility
+    document
+      .querySelectorAll('input[name="customerTypeTab"]')
+      .forEach((radio) => {
+        radio.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            selectTab(e.target.value);
+          }
+        });
+      });
+
+    // Initialize with default state
+    selectTab(customerType.value);
+  }
+
   // --- Adım grupları
   // 1) kimlik
   // 2) trafik
@@ -612,13 +687,6 @@
       if (e.shiftKey) btnBack.click();
       else btnNext.click();
     }
-  });
-
-  // Bireysel/kurumsal alanlarını değiştir
-  customerType.addEventListener("change", () => {
-    const isBireysel = customerType.value === "bireysel";
-    bireyselFields.style.display = isBireysel ? "grid" : "none";
-    kurumsalFields.style.display = isBireysel ? "none" : "grid";
   });
 
   // ---------- Aylık Mesaj (Segmentli Bar) ----------
@@ -1341,6 +1409,7 @@
   initAgentCountSlider();
   initIntlTel("phoneBireysel", "TR"); // bireysel
   initIntlTel("phone", "TR");
+  initCustomerTypeTabs(); // Add this line
   showStep(0);
   bindFormSubmit();
 })();

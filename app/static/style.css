@@ -393,4 +393,84 @@ input,select{
         font-size: 14px;
     }
 }
-  
+
+/* Customer Type Tabs Styling */
+.customer-type-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.customer-type-tab {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
+    color: var(--text);
+    user-select: none;
+    min-height: 50px;
+}
+
+.customer-type-tab:hover {
+    border-color: var(--brand);
+    background: #0f1520;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.customer-type-tab.selected {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #0b1020;
+    font-weight: 500;
+}
+
+.customer-type-tab.selected::after {
+    content: "✓";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: var(--ok);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+.customer-type-tab input[type="radio"] {
+    opacity: 0;
+    position: absolute;
+    z-index: 1;
+    margin: 0;
+    width: 18px;
+    height: 18px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .customer-type-tabs {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .customer-type-tab {
+        min-height: 45px;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}
