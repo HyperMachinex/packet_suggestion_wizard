@@ -1,109 +1,34 @@
-// --------------------------- script.js (v4 – Grup adımları + paket öneri + okunaklı özet + 2 slider) ---------------------------
-(() => {
-  // --- DOM referansları
-  const form = document.getElementById("featureForm");
+/**
+ * CCpilot Plan Destek Formu - Main Application Script
+ * A multi-step wizard for package recommendation
+ */
 
+(() => {
+  // ============================================================================
+  // DOM ELEMENTS & UTILITIES
+  // ============================================================================
+
+  const form = document.getElementById("featureForm");
   const btnBack = document.getElementById("btnBack");
   const btnNext = document.getElementById("btnNext");
   const stepLabel = document.getElementById("stepLabel");
   const progressBar = document.getElementById("progressBar");
-
   const customerType = document.getElementById("customerType");
   const bireyselFields = document.getElementById("bireyselFields");
   const kurumsalFields = document.getElementById("kurumsalFields");
   const fullNameInput = document.getElementById("fullName");
   const companyNameInput = document.getElementById("companyName");
+  const monthlyMessages = document.getElementById("monthlyMessages");
+  const temsilciCount = document.getElementById("temsilciCount");
 
-  const monthlyMessages = document.getElementById("monthlyMessages"); // select (gizlenecek)
-  const temsilciCount = document.getElementById("temsilciCount"); // select (gizlenecek)
-
+  // Utility functions
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  // --- Customer Type Tab Functionality ---
-  function initCustomerTypeTabs() {
-    const tabs = document.querySelectorAll(".customer-type-tab");
+  // ============================================================================
+  // STEP CONFIGURATION
+  // ============================================================================
 
-    // Function to update visual state
-    function updateTabVisualState(selectedValue) {
-      tabs.forEach((tab) => {
-        const tabValue = tab.dataset.value;
-        const radio = tab.querySelector('input[type="radio"]');
-
-        if (tabValue === selectedValue) {
-          tab.classList.add("selected");
-          radio.checked = true;
-        } else {
-          tab.classList.remove("selected");
-          radio.checked = false;
-        }
-      });
-    }
-
-    // Function to show/hide fields
-    function toggleFields(customerType) {
-      const isBireysel = customerType === "bireysel";
-      bireyselFields.style.display = isBireysel ? "grid" : "none";
-      kurumsalFields.style.display = isBireysel ? "none" : "grid";
-    }
-
-    // Function to handle tab selection
-    function selectTab(value) {
-      // Update hidden select for form compatibility
-      customerType.value = value;
-
-      // Update visual state
-      updateTabVisualState(value);
-
-      // Show/hide appropriate fields
-      toggleFields(value);
-
-      // Trigger change event on original select for any existing listeners
-      customerType.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-
-    // Add click listeners to tabs
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", (e) => {
-        e.preventDefault();
-        const value = tab.dataset.value;
-        selectTab(value);
-      });
-
-      // Add keyboard support
-      tab.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          const value = tab.dataset.value;
-          selectTab(value);
-        }
-      });
-    });
-
-    // Add change listeners to radio buttons for accessibility
-    document
-      .querySelectorAll('input[name="customerTypeTab"]')
-      .forEach((radio) => {
-        radio.addEventListener("change", (e) => {
-          if (e.target.checked) {
-            selectTab(e.target.value);
-          }
-        });
-      });
-
-    // Initialize with default state
-    selectTab(customerType.value);
-  }
-
-  // --- Adım grupları
-  // 1) kimlik
-  // 2) trafik
-  // 3) kanal
-  // 4) sohbet
-  // 5) ziyaret + crm
-  // 6) ai
-  // 7) operasyon + dev + security  ← burada "Paket Öner" tetiklenir
-  // 8) summary
   const stepGroups = [
     ["kimlik", "trafik"],
     ["kanal-msg", "sohbet-pencere", "ai", "crm", "sohbet-agent"],
@@ -111,7 +36,7 @@
     ["summary"],
   ];
 
-  const labels = {
+  const stepLabels = {
     kimlik: "Bilgiler",
     trafik: "Trafik",
     "kanal-msg": "Mesaj Kanalları",
@@ -127,348 +52,262 @@
     summary: "Özet",
   };
 
-  // ---- Dinamik özellik listeleri (placeholder)
-  /*
-  const RAW_GROUPS = {
+  // ============================================================================
+  // FEATURE GROUPS & RENDERING
+  // ============================================================================
+
+  const featureGroups = {
     kanal: [
-      'Facebook, Instagram, Viber, Telegram Entegrasyonları',
-      'Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)',
-      'Apple Business Chat',
-      "Facebook, Instagram ve Telegram'da Sesli Mesajlar",
-    ],
-    mobil: [
-      'Mobil Uygulama SDK','Telefon+ Modülü','Görüntülü Görüşme Modülü',
-    ],
-    pencere: [
-      'Sohbet öncesi butonlar','Dosya gönderme-alma',
-      'Mobil cihazlara uygun sohbet penceresi','Gönderim sonrası yanıt düzenleme',
-    ],
-    agent: [
-      'Yazım denetimi','Taslak cevaplar','Çoklu temsilcili sohbetler','Temsilci atama',
-    ],
-    ziyaret: [
-      'Akıllı yönlendirme',
-      'Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme',
-    ],
-    ai: ['Soru-cevap botu','Özet çıkarma'],
-    marketing: ['Kampanya tetikleyici','E-posta entegrasyonu','Raporlama API'],
-    operasyon: ['Vardiya planlama','Yetkilendirme','Onay akışları'],
-    crm: ['Müşteri profili','Sipariş senkronizasyonu','Fatura entegrasyonu',"Excel'e veri dökümü alma"],
-    dev: ['Webhook'],
-    security: ['IP kısıtlama','2FA','KVKK uyumu'],
-  };
-  */
-  const RAW_GROUPS = {
-    kanal: [
-      // ok
       "Facebook, Instagram, Viber, Telegram Entegrasyonları",
       "Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)",
       "Apple Business Chat",
       "Facebook, Instagram ve Telegram'da Sesli Mesajlar",
     ],
     mobil: [
-      // ok
       "Mobil Uygulama SDK",
       "Telefon+ Modülü",
       "Görüntülü Görüşme Modülü",
       "Something",
     ],
     pencere: [
-      // ok
       "Sohbet öncesi butonlar",
       "Dosya gönderme-alma",
       "Mobil cihazlara uygun sohbet penceresi",
       "Gönderim sonrası yanıt düzenleme",
     ],
     ziyaret: [
-      // ok
       "Akıllı yönlendirme",
       "Canlı ziyaretçi takibi ve sitedeki ziyaretçiye manuel mesaj gönderme",
       "Kampanya tetikleyici",
       "E-posta entegrasyonu",
     ],
-    ai: [
-      // ok
-      "Soru-cevap botu",
-      "Özet çıkarma",
-      "Yazım denetimi",
-    ],
-    agent: [
-      // ok
-      "Taslak cevaplar",
-      "Çoklu temsilcili sohbetler",
-      "Temsilci atama",
-    ],
-    security: [
-      // ok
-      "IP kısıtlama",
-      "2FA",
-      "KVKK uyumu",
-    ],
-    operasyon: [
-      // ok
-      "Vardiya planlama",
-      "Yetkilendirme",
-      "Onay akışları",
-    ],
-    crm: [
-      // ok
-      "Müşteri profili",
-      "Sipariş senkronizasyonu",
-      "Fatura entegrasyonu",
-    ],
-    dev: [
-      // ok
-      "Webhook",
-      "Raporlama API",
-      "Excel'e veri dökümü alma",
-    ],
+    ai: ["Soru-cevap botu", "Özet çıkarma", "Yazım denetimi"],
+    agent: ["Taslak cevaplar", "Çoklu temsilcili sohbetler", "Temsilci atama"],
+    security: ["IP kısıtlama", "2FA", "KVKK uyumu"],
+    operasyon: ["Vardiya planlama", "Yetkilendirme", "Onay akışları"],
+    crm: ["Müşteri profili", "Sipariş senkronizasyonu", "Fatura entegrasyonu"],
+    dev: ["Webhook", "Raporlama API", "Excel'e veri dökümü alma"],
   };
-  function slugify(s) {
-    return s
+
+  function slugify(text) {
+    return text
       .toLowerCase()
       .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "") // güvenli diakritik temizliği
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
   }
-  function renderGroup(containerId, arr) {
-    const el = document.getElementById(containerId);
-    if (!el) return;
-    el.innerHTML = arr
-      .map((txt) => {
-        const v = slugify(txt);
-        return `<label class="feature-card">
-          <input type="checkbox" name="features[]" value="${v}" data-label="${txt}"/>
-          <span class="feature-text">${txt}</span>
-        </label>`;
+
+  function updateCardVisualState(card, checkbox) {
+    card.classList.toggle("selected", checkbox.checked);
+  }
+
+  function renderFeatureGroup(containerId, features) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = features
+      .map((feature) => {
+        const value = slugify(feature);
+        return `
+          <label class="feature-card">
+            <input type="checkbox" name="features[]" value="${value}" data-label="${feature}"/>
+            <span class="feature-text">${feature}</span>
+          </label>
+        `;
       })
       .join("");
 
-    // Initialize visual state for all cards
-    el.querySelectorAll(".feature-card").forEach((card) => {
+    // Initialize visual state
+    container.querySelectorAll(".feature-card").forEach((card) => {
       const checkbox = card.querySelector('input[type="checkbox"]');
       updateCardVisualState(card, checkbox);
     });
   }
 
-  // Global function to update card visual state
-  function updateCardVisualState(card, checkbox) {
-    if (checkbox.checked) {
-      card.classList.add("selected");
-    } else {
-      card.classList.remove("selected");
-    }
+  function initializeFeatureGroups() {
+    Object.entries(featureGroups).forEach(([key, features]) => {
+      renderFeatureGroup(`grp-${key}`, features);
+    });
   }
-  renderGroup("grp-kanal", RAW_GROUPS.kanal);
-  renderGroup("grp-mobil", RAW_GROUPS.mobil);
-  renderGroup("grp-pencere", RAW_GROUPS.pencere);
-  renderGroup("grp-agent", RAW_GROUPS.agent);
-  renderGroup("grp-ziyaret", RAW_GROUPS.ziyaret);
-  renderGroup("grp-ai", RAW_GROUPS.ai);
-  renderGroup("grp-operasyon", RAW_GROUPS.operasyon);
-  renderGroup("grp-crm", RAW_GROUPS.crm);
-  renderGroup("grp-dev", RAW_GROUPS.dev);
-  renderGroup("grp-security", RAW_GROUPS.security);
 
-  // Global event listener for feature cards
-  document.addEventListener("click", (e) => {
-    const featureCard = e.target.closest(".feature-card");
-    if (featureCard) {
-      const checkbox = featureCard.querySelector('input[type="checkbox"]');
-      if (checkbox) {
-        // Toggle the checkbox
-        checkbox.checked = !checkbox.checked;
-        // Update visual state
-        updateCardVisualState(featureCard, checkbox);
-        // Trigger change event for form handling
-        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    }
-  });
+  // ============================================================================
+  // EVENT HANDLING
+  // ============================================================================
 
-  // Also listen for direct checkbox changes
-  document.addEventListener("change", (e) => {
-    if (e.target.type === "checkbox" && e.target.name === "features[]") {
+  function setupFeatureCardEvents() {
+    document.addEventListener("click", (e) => {
       const featureCard = e.target.closest(".feature-card");
-      if (featureCard) {
-        updateCardVisualState(featureCard, e.target);
-      }
-    }
-  });
+      if (!featureCard) return;
 
-  // ---- Doğrulama kuralları
-  const requiredByStep = {
+      const checkbox = featureCard.querySelector('input[type="checkbox"]');
+      if (!checkbox) return;
+
+      checkbox.checked = !checkbox.checked;
+      updateCardVisualState(featureCard, checkbox);
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    document.addEventListener("change", (e) => {
+      if (e.target.type === "checkbox" && e.target.name === "features[]") {
+        const featureCard = e.target.closest(".feature-card");
+        if (featureCard) {
+          updateCardVisualState(featureCard, e.target);
+        }
+      }
+    });
+  }
+
+  // ============================================================================
+  // VALIDATION SYSTEM
+  // ============================================================================
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+  const PHONE_REGEX = /^\+\d{8,15}$/;
+
+  const stepValidation = {
     kimlik: () => {
       const type = customerType.value;
-      if (type === "bireysel")
-        return !!(fullNameInput && fullNameInput.value.trim());
-      if (type === "kurumsal")
-        return !!(companyNameInput && companyNameInput.value.trim());
+      if (type === "bireysel") return !!fullNameInput?.value.trim();
+      if (type === "kurumsal") return !!companyNameInput?.value.trim();
       return true;
     },
-    trafik: () =>
-      !!(monthlyMessages && monthlyMessages.value) &&
-      !!(temsilciCount && temsilciCount.value),
+    trafik: () => !!(monthlyMessages?.value && temsilciCount?.value),
   };
 
-  // ---- Error helpers ----
-  function _anchorFor(el) {
-    return el.closest(".tel-wrap") || el;
-  } // tel-wrap varsa uyarıyı onun ALTINA koy
-  function setFieldError(el, msg) {
-    clearFieldError(el);
-    const p = document.createElement("div");
-    p.className = "field-error";
-    p.textContent = msg;
-    _anchorFor(el).insertAdjacentElement("afterend", p);
-    el.classList.add("input-invalid");
-  }
-  function clearFieldError(el) {
-    el.classList.remove("input-invalid");
-    const a = _anchorFor(el);
-    const n = a.nextElementSibling;
-    if (n && n.classList.contains("field-error")) n.remove();
+  function getErrorAnchor(element) {
+    return element.closest(".tel-wrap") || element;
   }
 
-  // ---- Validators ----
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+  function setFieldError(element, message) {
+    clearFieldError(element);
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "field-error";
+    errorDiv.textContent = message;
+    getErrorAnchor(element).insertAdjacentElement("afterend", errorDiv);
+    element.classList.add("input-invalid");
+  }
 
-  function validateEmailField(el) {
-    if (!el) return true;
-    clearFieldError(el);
-    const v = (el.value || "").trim();
-    if (!EMAIL_RE.test(v)) {
-      setFieldError(el, "Lütfen geçerli bir e-posta adresi girin.");
+  function clearFieldError(element) {
+    element.classList.remove("input-invalid");
+    const anchor = getErrorAnchor(element);
+    const nextElement = anchor.nextElementSibling;
+    if (nextElement?.classList.contains("field-error")) {
+      nextElement.remove();
+    }
+  }
+
+  function validateEmail(element) {
+    if (!element) return true;
+    clearFieldError(element);
+    const value = (element.value || "").trim();
+    if (!EMAIL_REGEX.test(value)) {
+      setFieldError(element, "Lütfen geçerli bir e-posta adresi girin.");
       return false;
     }
     return true;
   }
 
-  function validatePhoneField(el) {
-    if (!el) return true;
-    clearFieldError(el);
-    const v = (el.value || "").trim();
-    // Tel bileşeninden gelen E.164 gizli alanı varsa onu doğrula
-    const wrap = el.closest(".tel-wrap");
-    const hiddenFull = wrap?.querySelector(`input[name="${el.name}_full"]`);
-    if (hiddenFull && hiddenFull.value) {
-      const ok = /^\+\d{8,15}$/.test(hiddenFull.value); // E.164 aralığı
-      if (!ok) {
-        setFieldError(el, "Lütfen geçerli bir telefon numarası girin.");
+  function validatePhone(element) {
+    if (!element) return true;
+    clearFieldError(element);
+    const value = (element.value || "").trim();
+
+    // Check E.164 format if available
+    const wrap = element.closest(".tel-wrap");
+    const hiddenFull = wrap?.querySelector(
+      `input[name="${element.name}_full"]`
+    );
+    if (hiddenFull?.value) {
+      if (!PHONE_REGEX.test(hiddenFull.value)) {
+        setFieldError(element, "Lütfen geçerli bir telefon numarası girin.");
         return false;
       }
       return true;
     }
-    // Yoksa düz sayıya göre kontrol et
-    const digits = v.replace(/\D+/g, "");
+
+    // Fallback to digit count validation
+    const digits = value.replace(/\D+/g, "");
     if (digits.length < 8 || digits.length > 15) {
-      setFieldError(el, "Telefon numarası 8–15 haneli olmalıdır.");
+      setFieldError(element, "Telefon numarası 8–15 haneli olmalıdır.");
       return false;
     }
     return true;
   }
 
-  // ---- "Boş olamaz" validator'ı ----
-  function validateRequiredNotEmpty(el) {
-    if (!el) return true;
-    clearFieldError(el);
-    const v = (el.value || "").trim();
-    if (!v) {
-      setFieldError(el, "Bu alan boş bırakılamaz.");
+  function validateRequired(element) {
+    if (!element) return true;
+    clearFieldError(element);
+    const value = (element.value || "").trim();
+    if (!value) {
+      setFieldError(element, "Bu alan boş bırakılamaz.");
       return false;
     }
     return true;
   }
 
-  // ---- Kimlik adımı ekstra doğrulama (bireysel/kurumsal alanları) ----
-  function validateIdentityExtrasOnStep() {
-    const ids = getCurrentIds();
-    if (!ids.includes("kimlik")) return true; // sadece kimlik adımında çalış
+  function validateIdentityStep() {
+    const currentIds = getCurrentStepIds();
+    if (!currentIds.includes("kimlik")) return true;
 
     const isBireysel = customerType.value === "bireysel";
+    const fields = isBireysel
+      ? {
+          name: fullNameInput,
+          industry: document.getElementById("industry"),
+          email: document.getElementById("email"),
+          phone: document.getElementById("phoneBireysel"),
+        }
+      : {
+          name: companyNameInput,
+          contact: document.getElementById("contactName"),
+          industry: document.getElementById("industryCorp"),
+          email: document.getElementById("emailCorp"),
+          phone: document.getElementById("phone"),
+        };
 
-    if (isBireysel) {
-      const industryEl = document.getElementById("industry");
-      const emailEl = document.getElementById("email");
-      const phoneEl = document.getElementById("phoneBireysel");
+    const validations = [
+      validateRequired(fields.name),
+      validateRequired(fields.industry),
+      validateEmail(fields.email),
+      validatePhone(fields.phone),
+    ];
 
-      const okName = validateRequiredNotEmpty(fullNameInput);
-      const okInd = validateRequiredNotEmpty(industryEl);
-      const okEmail = validateEmailField(emailEl);
-      const okPhone = validatePhoneField(phoneEl);
-
-      if (!okName) fullNameInput?.focus();
-      else if (!okInd) industryEl?.focus();
-      else if (!okEmail) emailEl?.focus();
-      else if (!okPhone) phoneEl?.focus();
-
-      return okName && okInd && okEmail && okPhone;
-    } else {
-      const contactEl = document.getElementById("contactName");
-      const sectorEl = document.getElementById("industryCorp");
-      const emailEl = document.getElementById("emailCorp");
-      const phoneEl = document.getElementById("phone");
-
-      const okCompany = validateRequiredNotEmpty(companyNameInput);
-      const okContact = validateRequiredNotEmpty(contactEl);
-      const okSector = validateRequiredNotEmpty(sectorEl);
-      const okEmail = validateEmailField(emailEl);
-      const okPhone = validatePhoneField(phoneEl);
-
-      if (!okCompany) companyNameInput?.focus();
-      else if (!okContact) contactEl?.focus();
-      else if (!okSector) sectorEl?.focus();
-      else if (!okEmail) emailEl?.focus();
-      else if (!okPhone) phoneEl?.focus();
-
-      return okCompany && okContact && okSector && okEmail && okPhone;
+    if (!isBireysel) {
+      validations.push(validateRequired(fields.contact));
     }
+
+    // Focus first invalid field
+    const fieldArray = Object.values(fields).filter(Boolean);
+    const firstInvalidIndex = validations.findIndex((valid) => !valid);
+    if (firstInvalidIndex !== -1) {
+      fieldArray[firstInvalidIndex]?.focus();
+    }
+
+    return validations.every((valid) => valid);
   }
 
-  // Kimlik adımında temas bilgilerini doğrula
-  function validateContactsOnStep() {
-    const ids = getCurrentIds();
-    if (!ids.includes("kimlik")) return true;
-    const isBireysel = customerType.value === "bireysel";
-    const emailEl = document.getElementById(isBireysel ? "email" : "emailCorp");
-    const phoneEl = document.getElementById(
-      isBireysel ? "phoneBireysel" : "phone"
-    );
-    const ok1 = validateEmailField(emailEl);
-    const ok2 = validatePhoneField(phoneEl);
-    if (!ok1) emailEl?.focus();
-    else if (!ok2) phoneEl?.focus();
-    return ok1 && ok2;
-  }
+  // ============================================================================
+  // PACKAGE RECOMMENDATION
+  // ============================================================================
 
-  // ---- Paket önerme
-  function getPackageSuggestion() {
-    const data = new FormData(form);
-    const monthly = String(data.get("monthlyMessages") || "");
-    const agent = String(data.get("temsilciCount") || "");
+  function getPackageRecommendation() {
+    const formData = new FormData(form);
+    const monthly = String(formData.get("monthlyMessages") || "");
+    const agent = String(formData.get("temsilciCount") || "");
 
-    const has = (label) =>
-      !!$$('input[name="features[]"]').find(
+    const hasFeature = (label) =>
+      $$('input[name="features[]"]').some(
         (cb) => cb.dataset.label === label && cb.checked
       );
 
-    // 1) Hacim/ekip eşiği -> Kurumsal (100k+ doğrudan kurumsal)
-    if (["100k+"].includes(monthly) || agent === "100+") {
-      return {
-        pkg: "Kurumsal Paket",
-        desc: "Yüksek trafik/ekip hacmi",
-        reason: "10k+ mesaj veya 100+ temsilci",
-      };
-    }
-
-    // 2) Kurumsal özellikler tetikler
+    // Enterprise features trigger
     const enterpriseFeatures = [
       "Mobil Uygulama SDK",
       "Görüntülü Görüşme Modülü",
     ];
-    if (enterpriseFeatures.some(has)) {
-      const chosen = enterpriseFeatures.filter(has).join(", ");
+    if (enterpriseFeatures.some(hasFeature)) {
+      const chosen = enterpriseFeatures.filter(hasFeature).join(", ");
       return {
         pkg: "Kurumsal Paket",
         desc: "Kurumsal özellikler seçildiği için",
@@ -476,16 +315,16 @@
       };
     }
 
-    // 3) Premium: 10K-100K
-    if (monthly === "10k-100k") {
+    // High volume/team threshold
+    if (monthly === "100k+" || agent === "100+") {
       return {
-        pkg: "Premium Paket",
-        desc: "10K-100K aylık mesaj hacmi",
-        reason: "Hacim temelli öneri",
+        pkg: "Kurumsal Paket",
+        desc: "Yüksek trafik/ekip hacmi",
+        reason: "10k+ mesaj veya 100+ temsilci",
       };
     }
 
-    // 4) Premium özellikleri
+    // Premium features
     const premiumFeatures = [
       "Whatsapp Entegrasyonu (Ek olarak ücretlendirilmektedir)",
       "Facebook, Instagram ve Telegram'da Sesli Mesajlar",
@@ -503,12 +342,22 @@
       "Webhook",
       "2FA",
     ];
-    if (premiumFeatures.some(has)) {
-      const chosen = premiumFeatures.filter(has).join(", ");
+
+    if (premiumFeatures.some(hasFeature)) {
+      const chosen = premiumFeatures.filter(hasFeature).join(", ");
       return {
         pkg: "Premium Paket",
         desc: "Gelişmiş kanal özellikleri",
         reason: `Seçilen: ${chosen}`,
+      };
+    }
+
+    // Volume-based recommendations
+    if (monthly === "10k-100k") {
+      return {
+        pkg: "Premium Paket",
+        desc: "10K-100K aylık mesaj hacmi",
+        reason: "Hacim temelli öneri",
       };
     }
 
@@ -520,7 +369,7 @@
       };
     }
 
-    // 5) Pro özellikleri
+    // Professional features
     const proFeatures = [
       "Sohbet öncesi butonlar",
       "Dosya gönderme-alma",
@@ -536,8 +385,9 @@
       "Fatura entegrasyonu",
       "IP kısıtlama",
     ];
-    if (proFeatures.some(has)) {
-      const chosen = proFeatures.filter(has).join(", ");
+
+    if (proFeatures.some(hasFeature)) {
+      const chosen = proFeatures.filter(hasFeature).join(", ");
       return {
         pkg: "Profesyonel Paket",
         desc: "Gelişmiş işlevler seçildi",
@@ -545,7 +395,7 @@
       };
     }
 
-    // 6) Ücretsiz: düşük hacim + küçük ekip
+    // Basic package for low volume
     if (agent === "1-2" && monthly === "0-1000") {
       return {
         pkg: "Basic Paket",
@@ -554,7 +404,7 @@
       };
     }
 
-    // 7) Varsayılan
+    // Default recommendation
     return {
       pkg: "Basic Paket",
       desc: "Varsayılan öneri",
@@ -562,681 +412,490 @@
     };
   }
 
-  // ---- Adım makinesi
-  let idx = 0;
-  const getCurrentIds = () => stepGroups[idx] || [];
-  const isSummary = () => getCurrentIds().includes("summary");
+  // ============================================================================
+  // STEP NAVIGATION
+  // ============================================================================
 
-  function showStep(i) {
-    idx = Math.max(0, Math.min(i, stepGroups.length - 1));
-    $$(".step").forEach((s) => s.classList.add("hidden"));
-    getCurrentIds().forEach((id) => {
-      const el = document.getElementById(`step-${id}`);
-      if (el) el.classList.remove("hidden");
+  let currentStepIndex = 0;
+
+  function getCurrentStepIds() {
+    return stepGroups[currentStepIndex] || [];
+  }
+
+  function isSummaryStep() {
+    return getCurrentStepIds().includes("summary");
+  }
+
+  function canProceedToNext() {
+    const currentIds = getCurrentStepIds();
+    return currentIds.every((id) => {
+      const validator = stepValidation[id];
+      return validator ? validator() : true;
+    });
+  }
+
+  function showStep(stepIndex) {
+    currentStepIndex = Math.max(0, Math.min(stepIndex, stepGroups.length - 1));
+
+    // Hide all steps
+    $$(".step").forEach((step) => step.classList.add("hidden"));
+
+    // Show current step
+    getCurrentStepIds().forEach((id) => {
+      const stepElement = document.getElementById(`step-${id}`);
+      if (stepElement) stepElement.classList.remove("hidden");
     });
 
-    // Buton metinleri
+    // Update navigation buttons
+    updateNavigationButtons();
+    updateProgressDisplay();
+    focusFirstInput();
+  }
+
+  function updateNavigationButtons() {
     const lastBeforeSummary = stepGroups.length - 2;
-    btnBack.disabled = idx === 0;
+    btnBack.disabled = currentStepIndex === 0;
+
     btnNext.textContent =
-      idx === lastBeforeSummary
+      currentStepIndex === lastBeforeSummary
         ? "Paket Öner"
-        : isSummary()
+        : isSummaryStep()
         ? "Bitti"
         : "Devam Et";
 
-    let btnContact = document.getElementById("btnContact");
-
-    if (!btnContact.dataset.bound) {
-      btnContact.dataset.bound = "1";
-      btnContact.addEventListener("click", async () => {
-        try {
-          await saveSummary(); // MongoDB'ye kaydet
-        } catch (_) {}
-        document.getElementById("contactModal")?.classList.remove("hidden");
-      });
+    // Show/hide contact button only on summary page
+    const btnContact = document.getElementById("btnContact");
+    if (btnContact) {
+      btnContact.style.display = isSummaryStep() ? "inline-block" : "none";
     }
+  }
 
-    btnContact.addEventListener("click", () => {
-      document.getElementById("contactModal").classList.remove("hidden");
-    });
-
-    // Modal kapatma
-    document
-      .getElementById("closeContactModal")
-      ?.addEventListener("click", () => {
-        document.getElementById("contactModal").classList.add("hidden");
-      });
-
-    if (isSummary()) {
-      if (!btnContact) {
-        btnContact = document.createElement("button");
-        btnContact.type = "button";
-        btnContact.id = "btnContact";
-        btnContact.className = "btn";
-        btnContact.textContent = "Size ulaşmamızı ister misiniz?";
-        btnNext.parentNode.insertBefore(btnContact, btnNext);
-      }
-      btnContact.style.display = "inline-block";
-    } else {
-      if (btnContact) btnContact.style.display = "none";
-    }
-
-    // İlerleme & başlık
-    const totalCount = stepGroups.length - 1;
-    const shownIndex = Math.min(idx + 1, totalCount);
-    const groupLabel = isSummary()
-      ? "Özet"
-      : getCurrentIds()
-          .map((id) => labels[id])
-          .join(" + ");
-    stepLabel.textContent = `Adım ${Math.min(
-      shownIndex,
-      totalCount
-    )}/${totalCount}: ${groupLabel}`;
-    const pct = Math.round(
-      ((Math.min(idx, totalCount - 1) + 1) / totalCount) * 100
+  function updateProgressDisplay() {
+    const totalSteps = stepGroups.length - 1;
+    const currentStepNumber = Math.min(currentStepIndex + 1, totalSteps);
+    const progressPercentage = Math.round(
+      (currentStepNumber / totalSteps) * 100
     );
-    progressBar.style.width = pct + "%";
 
-    // İlk odak
-    const first = document.querySelector(
-      getCurrentIds()
+    const groupLabel = isSummaryStep()
+      ? "Özet"
+      : getCurrentStepIds()
+          .map((id) => stepLabels[id])
+          .join(" + ");
+
+    stepLabel.textContent = `Adım ${currentStepNumber}/${totalSteps}: ${groupLabel}`;
+    progressBar.style.width = `${progressPercentage}%`;
+  }
+
+  function focusFirstInput() {
+    const firstInput = document.querySelector(
+      getCurrentStepIds()
         .map(
           (id) =>
             `#step-${id} input, #step-${id} select, #step-${id} textarea, #step-${id} button`
         )
         .join(", ")
     );
-    first?.focus();
+    firstInput?.focus();
   }
 
-  function canProceed() {
-    const ids = getCurrentIds();
-    if (ids.includes("kimlik") && !requiredByStep.kimlik()) return false;
-    if (ids.includes("trafik") && !requiredByStep.trafik()) return false;
-    return true;
-  }
-
-  btnNext.addEventListener("click", () => {
-    // Kimlik adımında boş alan kontrolü
-    if (!validateIdentityExtrasOnStep()) return;
+  function goToNextStep() {
+    if (!validateIdentityStep()) return;
 
     const lastBeforeSummary = stepGroups.length - 2;
 
-    if (idx === lastBeforeSummary) {
-      const rec = getPackageSuggestion();
-      buildSummary(rec);
-      showStep(idx + 1);
+    if (currentStepIndex === lastBeforeSummary) {
+      const recommendation = getPackageRecommendation();
+      buildSummary(recommendation);
+      showStep(currentStepIndex + 1);
       return;
     }
 
-    if (isSummary()) return;
+    if (isSummaryStep()) return;
 
-    if (!canProceed()) {
-      // basit vurgulu doğrulama
-      getCurrentIds().forEach((id) => {
-        const section = document.getElementById(`step-${id}`);
-        section
-          ?.querySelectorAll("select[required], input[required]")
-          .forEach((el) => {
-            if (!el.value) el.style.outline = "2px solid var(--warn)";
-            else el.style.outline = "";
-          });
-      });
+    if (!canProceedToNext()) {
+      highlightInvalidFields();
       return;
     }
 
-    showStep(idx + 1);
-  });
-
-  btnBack.addEventListener("click", () => showStep(idx - 1));
-
-  // Enter = ileri, Shift+Enter = geri
-  form.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !["TEXTAREA"].includes(e.target.tagName)) {
-      e.preventDefault();
-      if (e.shiftKey) btnBack.click();
-      else btnNext.click();
-    }
-  });
-
-  // ---------- Aylık Mesaj (Segmentli Bar) ----------
-  // --- MONTHLY (Aylık Mesaj) pill görünümü ---
-  (function injectMonthlyCSS() {
-    const old = document.getElementById("mm-style");
-    if (old) old.remove();
-    const css = `
-    :root { --pill-border:#fff; }  /* çerçeve rengi */
-
-    .mm-wrap{ margin-top:8px; position:relative; padding-top:22px; }
-    .mm-range{
-      position:relative; display:grid; grid-template-columns:repeat(4,1fr);
-      border:none; box-shadow: inset 0 0 0 2px var(--pill-border);   /* dışı full beyaz */
-      border-radius:9999px; overflow:hidden; background:#0d1017;
-    }
-    /* dolgu: kesintisiz + sol taraf hep yuvarlak; sağ taraf %100'de yuvarlanır (JS) */
-    .mm-fill{
-      position:absolute; left:0; top:0; bottom:0; width:0%;
-      background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
-      border-radius:9999px 0 0 9999px;
-      pointer-events:none; transition:width .18s ease;
-      z-index:1; transform:translateZ(0);
-    }
-    /* segment ayraçları: beyaz çizgi istersek var(--pill-border) kullan */
-    .mm-seg{
-      position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
-      border-right:1px solid var(--pill-border); outline:0; background:transparent; z-index:2;
-    }
-    .mm-seg:last-child{ border-right:0; }
-
-    .mm-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
-    .mm-tick{ position:absolute; top:-18px; font-size:12px; color:var(--pill-border); white-space:nowrap; transform:translateX(-50%); }
-    .mm-tick.end{ transform:translateX(-100%); }
-    `;
-    const s = document.createElement("style");
-    s.id = "mm-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  })();
-
-  // --- Field error styles (inject) ---
-  (function injectErrorCSS() {
-    if (document.getElementById("err-style")) return;
-    const css = `
-    .field-error{ margin-top:6px; font-size:12px; color:var(--warn); }
-    .input-invalid{ outline:2px solid var(--warn); }
-    `;
-    const s = document.createElement("style");
-    s.id = "err-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  })();
-
-  function initMonthlyMessagesSlider() {
-    if (!monthlyMessages) return;
-
-    monthlyMessages.style.display = "none";
-    const container = monthlyMessages.parentElement;
-
-    const wrap = document.createElement("div");
-    wrap.className = "mm-wrap";
-    const ticks = document.createElement("div");
-    ticks.className = "mm-ticks";
-    const range = document.createElement("div");
-    range.className = "mm-range";
-    const fill = document.createElement("div");
-    fill.className = "mm-fill";
-    range.appendChild(fill);
-
-    const segs = [
-      { value: "0-1000", label: "1.000" },
-      { value: "1000-10000", label: "10.000" },
-      { value: "10k-100k", label: "100.000" },
-      { value: "100k+", label: "100.000+" },
-    ];
-
-    const tickPos = [25, 50, 75, 100];
-    ticks.innerHTML = segs
-      .map(
-        (s, i) =>
-          `<span class="mm-tick ${
-            i === segs.length - 1 ? "end" : ""
-          }" style="left:${tickPos[i]}%">${s.label}</span>`
-      )
-      .join("");
-
-    const segButtons = [];
-    segs.forEach((s, idx) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "mm-seg";
-      b.dataset.value = s.value;
-      b.setAttribute("role", "radio");
-      b.setAttribute("aria-checked", "false");
-      b.tabIndex = 0;
-
-      b.addEventListener("click", () => selectSeg(s.value));
-      b.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-          e.preventDefault();
-          selectSeg(segs[Math.min(idx + 1, segs.length - 1)].value, true);
-        }
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-          e.preventDefault();
-          selectSeg(segs[Math.max(idx - 1, 0)].value, true);
-        }
-      });
-
-      range.appendChild(b);
-      segButtons.push(b);
-    });
-
-    wrap.appendChild(ticks);
-    wrap.appendChild(range);
-    container.appendChild(wrap);
-
-    function normalizeMonthly(val) {
-      if (val === "100k-1m" || val === "1m+" || val === "100k+") return "100k+";
-      return val;
-    }
-
-    function selectSeg(value, focus = false) {
-      const normalized = normalizeMonthly(value);
-      monthlyMessages.value = normalized;
-
-      const selIndex = segs.findIndex((x) => x.value === normalized);
-      const pct = selIndex >= 0 ? ((selIndex + 1) / segs.length) * 100 : 0;
-      fill.style.width = pct + "%";
-
-      segButtons.forEach((btn, i) => {
-        btn.setAttribute("aria-checked", i === selIndex ? "true" : "false");
-      });
-
-      if (focus && selIndex >= 0) segButtons[selIndex].focus();
-    }
-
-    // İlk yükleme
-    selectSeg(normalizeMonthly(monthlyMessages.value || ""));
+    showStep(currentStepIndex + 1);
   }
 
-  // ---------- Temsilci Sayısı (Segmentli Bar) ----------
-  // --- AGENT COUNT (Temsilci) pill görünümü ---
-  (function injectAgentCSS() {
-    const old = document.getElementById("ac-style");
-    if (old) old.remove();
-    const css = `
-    :root { --pill-border:#fff; }
+  function goToPreviousStep() {
+    showStep(currentStepIndex - 1);
+  }
 
-    .ac-wrap{ margin-top:8px; position:relative; padding-top:22px; }
-    .ac-range{
-      position:relative; display:grid; grid-template-columns:repeat(4,1fr);
-      border:none; box-shadow: inset 0 0 0 2px var(--pill-border); /* dışı full beyaz */
-      border-radius:9999px; overflow:hidden; background:#0d1017;
+  function highlightInvalidFields() {
+    getCurrentStepIds().forEach((id) => {
+      const section = document.getElementById(`step-${id}`);
+      section
+        ?.querySelectorAll("select[required], input[required]")
+        .forEach((el) => {
+          el.style.outline = el.value ? "" : "2px solid var(--warn)";
+        });
+    });
+  }
+
+  // ============================================================================
+  // CUSTOMER TYPE MANAGEMENT
+  // ============================================================================
+
+  function initCustomerTypeTabs() {
+    const tabs = document.querySelectorAll(".customer-type-tab");
+
+    function updateTabVisualState(selectedValue) {
+      tabs.forEach((tab) => {
+        const tabValue = tab.dataset.value;
+        const radio = tab.querySelector('input[type="radio"]');
+        const isSelected = tabValue === selectedValue;
+
+        tab.classList.toggle("selected", isSelected);
+        radio.checked = isSelected;
+      });
     }
-    .ac-fill{
-      position:absolute; left:0; top:0; bottom:0; width:0%;
-      background:linear-gradient(180deg, rgba(34,197,94,.45), rgba(34,197,94,.28));
-      border-radius:9999px 0 0 9999px; /* sol hep yuvarlak */
-      pointer-events:none; transition:width .18s ease;
-      z-index:1; transform:translateZ(0);
+
+    function toggleFields(customerType) {
+      const isBireysel = customerType === "bireysel";
+      bireyselFields.style.display = isBireysel ? "grid" : "none";
+      kurumsalFields.style.display = isBireysel ? "none" : "grid";
     }
-    .ac-seg{
-      position:relative; padding:18px 0; text-align:center; cursor:pointer; user-select:none;
-      border-right:1px solid var(--pill-border); outline:0; background:transparent; z-index:2; /* beyaz bölme çizgileri */
+
+    function selectTab(value) {
+      customerType.value = value;
+      updateTabVisualState(value);
+      toggleFields(value);
+      customerType.dispatchEvent(new Event("change", { bubbles: true }));
     }
-    .ac-seg:last-child{ border-right:0; }
 
-    .ac-ticks{ position:absolute; top:0; left:0; width:100%; height:0; pointer-events:none; }
-    .ac-tick{ position:absolute; top:-18px; font-size:12px; color:var(--pill-border); white-space:nowrap; transform:translateX(-50%); }
-    .ac-tick.end{ transform:translateX(-100%); }
-    `;
-    const s = document.createElement("style");
-    s.id = "ac-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  })();
+    function setupTabListeners() {
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", (e) => {
+          e.preventDefault();
+          selectTab(tab.dataset.value);
+        });
 
-  function initAgentCountSlider() {
-    if (!temsilciCount) return;
+        tab.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectTab(tab.dataset.value);
+          }
+        });
+      });
 
-    temsilciCount.style.display = "none";
-    const container = temsilciCount.parentElement;
+      document
+        .querySelectorAll('input[name="customerTypeTab"]')
+        .forEach((radio) => {
+          radio.addEventListener("change", (e) => {
+            if (e.target.checked) selectTab(e.target.value);
+          });
+        });
+    }
+
+    setupTabListeners();
+    selectTab(customerType.value);
+  }
+
+  // ============================================================================
+  // PILL BAR SLIDERS
+  // ============================================================================
+
+  function createPillBar(selectElement, config) {
+    if (!selectElement) return;
+
+    selectElement.style.display = "none";
+    const container = selectElement.parentElement;
 
     const wrap = document.createElement("div");
-    wrap.className = "ac-wrap";
+    wrap.className = config.wrapClass;
+
     const ticks = document.createElement("div");
-    ticks.className = "ac-ticks";
+    ticks.className = config.ticksClass;
+
     const range = document.createElement("div");
-    range.className = "ac-range";
+    range.className = config.rangeClass;
+
     const fill = document.createElement("div");
-    fill.className = "ac-fill";
+    fill.className = config.fillClass;
     range.appendChild(fill);
 
-    const segs = [
-      { value: "1-2", label: "2" },
-      { value: "3-10", label: "10" },
-      { value: "11-100", label: "100" },
-      { value: "100+", label: "100+" },
-    ];
-
-    const tickHtml = segs
-      .map((s, i) => {
-        const pct = ((i + 1) / segs.length) * 100;
-        const end = i === segs.length - 1 ? "end" : "";
-        return `<span class="ac-tick ${end}" style="left:${pct}%">${s.label}</span>`;
+    // Create tick labels
+    const tickPositions = config.segments.map(
+      (_, i) => ((i + 1) / config.segments.length) * 100
+    );
+    ticks.innerHTML = config.segments
+      .map((segment, i) => {
+        const isLast = i === config.segments.length - 1;
+        const endClass = isLast ? "end" : "";
+        return `<span class="${config.tickClass} ${endClass}" style="left:${tickPositions[i]}%">${segment.label}</span>`;
       })
       .join("");
-    ticks.innerHTML = tickHtml;
 
-    const segButtons = [];
-    segs.forEach((s, idx) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "ac-seg";
-      b.dataset.value = s.value;
-      b.setAttribute("role", "radio");
-      b.setAttribute("aria-checked", "false");
-      b.tabIndex = 0;
+    // Create segment buttons
+    const segmentButtons = [];
+    config.segments.forEach((segment, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = config.segmentClass;
+      button.dataset.value = segment.value;
+      button.setAttribute("role", "radio");
+      button.setAttribute("aria-checked", "false");
+      button.tabIndex = 0;
 
-      b.addEventListener("click", () => selectSeg(s.value));
-      b.addEventListener("keydown", (e) => {
+      button.addEventListener("click", () => selectSegment(segment.value));
+      button.addEventListener("keydown", (e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           e.preventDefault();
-          selectSeg(segs[Math.min(idx + 1, segs.length - 1)].value, true);
+          const nextIndex = Math.min(index + 1, config.segments.length - 1);
+          selectSegment(config.segments[nextIndex].value, true);
         }
         if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
           e.preventDefault();
-          selectSeg(segs[Math.max(idx - 1, 0)].value, true);
+          const prevIndex = Math.max(index - 1, 0);
+          selectSegment(config.segments[prevIndex].value, true);
         }
       });
 
-      range.appendChild(b);
-      segButtons.push(b);
+      range.appendChild(button);
+      segmentButtons.push(button);
     });
+
+    function selectSegment(value, focus = false) {
+      selectElement.value = value;
+      const selectedIndex = config.segments.findIndex((s) => s.value === value);
+      const percentage =
+        selectedIndex >= 0
+          ? ((selectedIndex + 1) / config.segments.length) * 100
+          : 0;
+
+      fill.style.width = `${percentage}%`;
+
+      segmentButtons.forEach((btn, i) => {
+        btn.setAttribute(
+          "aria-checked",
+          i === selectedIndex ? "true" : "false"
+        );
+      });
+
+      if (focus && selectedIndex >= 0) {
+        segmentButtons[selectedIndex].focus();
+      }
+    }
 
     wrap.appendChild(ticks);
     wrap.appendChild(range);
     container.appendChild(wrap);
 
-    function selectSeg(value, focus = false) {
-      temsilciCount.value = value;
-      const selIndex = segs.findIndex((x) => x.value === value);
-      const pct = selIndex >= 0 ? ((selIndex + 1) / segs.length) * 100 : 0;
-      fill.style.width = pct + "%";
-      segButtons.forEach((btn, i) => {
-        btn.setAttribute("aria-checked", i === selIndex ? "true" : "false");
-      });
-      if (focus && selIndex >= 0) segButtons[selIndex].focus();
-    }
-
-    // İlk yükleme
-    selectSeg(temsilciCount.value || "");
+    // Initialize with current value
+    selectSegment(selectElement.value || config.segments[0].value);
   }
-  // TR-dostu: string'in sadece ilk harfini büyütür (kalanı aynen bırakır)
-  const capitalizeFirstTR = (s) => {
-    if (!s) return undefined;
-    s = String(s).trim();
-    if (!s) return undefined;
-    return s.charAt(0).toLocaleUpperCase("tr-TR") + s.slice(1);
-  };
 
-  // (İsteğe bağlı) Şirket adlarını her kelimenin baş harfi büyük yapayım dersen:
-  const titleCaseTR = (s) => {
-    if (!s) return undefined;
-    return String(s)
-      .trim()
-      .split(/\s+/)
-      .map((w) => w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1))
-      .join(" ");
-  };
-  // ---- Özet / dışa aktar
-  function buildSummary(rec) {
-    const data = new FormData(form);
+  function initMonthlyMessagesSlider() {
+    createPillBar(monthlyMessages, {
+      wrapClass: "mm-wrap",
+      ticksClass: "mm-ticks",
+      rangeClass: "mm-range",
+      fillClass: "mm-fill",
+      segmentClass: "mm-seg",
+      tickClass: "mm-tick",
+      segments: [
+        { value: "0-1000", label: "1.000" },
+        { value: "1000-10000", label: "10.000" },
+        { value: "10k-100k", label: "100.000" },
+        { value: "100k+", label: "100.000+" },
+      ],
+    });
+  }
+
+  function initAgentCountSlider() {
+    createPillBar(temsilciCount, {
+      wrapClass: "ac-wrap",
+      ticksClass: "ac-ticks",
+      rangeClass: "ac-range",
+      fillClass: "ac-fill",
+      segmentClass: "ac-seg",
+      tickClass: "ac-tick",
+      segments: [
+        { value: "1-2", label: "2" },
+        { value: "3-10", label: "10" },
+        { value: "11-100", label: "100" },
+        { value: "100+", label: "100+" },
+      ],
+    });
+  }
+
+  // ============================================================================
+  // SUMMARY & EXPORT
+  // ============================================================================
+
+  function buildSummary(recommendation) {
+    const formData = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(
       (cb) => cb.dataset.label
     );
 
     const payload = {
-      customerType: capitalizeFirstTR(data.get("customerType")),
-      fullName: titleCaseTR((data.get("fullName") || "").trim() || undefined),
-      // Sadece ilk harf büyüsün istersen: capitalizeFirstTR(data.get('companyName'))
-      companyName: titleCaseTR(data.get("companyName")),
-      monthlyMessages: data.get("monthlyMessages"),
-      temsilciCount: data.get("temsilciCount"),
+      customerType: capitalizeFirstTR(formData.get("customerType")),
+      fullName: titleCaseTR(formData.get("fullName")),
+      companyName: titleCaseTR(formData.get("companyName")),
+      monthlyMessages: formData.get("monthlyMessages"),
+      temsilciCount: formData.get("temsilciCount"),
       features,
     };
 
-    const recommendation = rec || {
+    const rec = recommendation || {
       pkg: "Ücretsiz Paket",
       desc: "(varsayılan)",
       reason: "—",
     };
 
-    const esc = (s) =>
-      String(s ?? "").replace(
-        /[&<>"']/g,
-        (c) =>
-          ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;",
-          }[c])
-      );
-
-    const parts = [];
-    parts.push(
-      `<div><strong>Başvuru Tipi:</strong> ${esc(payload.customerType)}</div>`
-    );
-    if (payload.fullName)
-      parts.push(`<div><strong>İsim:</strong> ${esc(payload.fullName)}</div>`);
-    if (payload.companyName)
-      parts.push(
-        `<div><strong>Şirket:</strong> ${esc(payload.companyName)}</div>`
-      );
-    parts.push(
-      `<div><strong>Aylık Mesaj:</strong> ${esc(
+    const summaryParts = [
+      `<div><strong>Başvuru Tipi:</strong> ${escapeHtml(
+        payload.customerType
+      )}</div>`,
+      payload.fullName
+        ? `<div><strong>İsim:</strong> ${escapeHtml(payload.fullName)}</div>`
+        : "",
+      payload.companyName
+        ? `<div><strong>Şirket:</strong> ${escapeHtml(
+            payload.companyName
+          )}</div>`
+        : "",
+      `<div><strong>Aylık Mesaj:</strong> ${escapeHtml(
         payload.monthlyMessages || "—"
-      )}</div>`
-    );
-    parts.push(
-      `<div><strong>Temsilci:</strong> ${esc(
+      )}</div>`,
+      `<div><strong>Temsilci:</strong> ${escapeHtml(
         payload.temsilciCount || "—"
-      )}</div>`
-    );
-
-    parts.push(
-      '<div style="margin-top:8px"><strong>Seçilen Özellikler:</strong></div>'
-    );
-    if (features.length) {
-      parts.push(
-        '<ul style="margin:6px 0 10px 20px">' +
-          features.map((f) => `<li>${esc(f)}</li>`).join("") +
+      )}</div>`,
+      '<div style="margin-top:8px"><strong>Seçilen Özellikler:</strong></div>',
+      features.length
+        ? '<ul style="margin:6px 0 10px 20px">' +
+          features.map((f) => `<li>${escapeHtml(f)}</li>`).join("") +
           "</ul>"
-      );
-    } else {
-      parts.push('<div style="color:var(--muted)">(yok)</div>');
-    }
-
-    parts.push(
-      '<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0" />'
-    );
-    parts.push(
-      `<div><strong>Önerilen Paket:</strong> ${esc(recommendation.pkg)}</div>`
-    );
-    parts.push(
-      `<div><strong>Açıklama:</strong> ${esc(recommendation.desc)}</div>`
-    );
-    parts.push(
-      `<div><strong>Gerekçe:</strong> ${esc(recommendation.reason)}</div>`
-    );
-
-    const el = document.getElementById("summaryText");
-    el.classList.add("as-html");
-    el.style.whiteSpace = "normal";
-    el.innerHTML = parts.join("\n");
-  }
-
-  function download(filename, content, type = "text/plain") {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([content], { type }));
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-  document.getElementById("copyBtn")?.addEventListener("click", () => {
-    const txt = document.getElementById("summaryText").textContent || "";
-    navigator.clipboard?.writeText(txt);
-  });
-  document.getElementById("jsonBtn")?.addEventListener("click", () => {
-    const data = collect();
-    download(
-      "ccpilot-summary.json",
-      JSON.stringify(data, null, 2),
-      "application/json"
-    );
-  });
-  document.getElementById("csvBtn")?.addEventListener("click", () => {
-    const data = collect();
-    const rows = [
-      [
-        "customerType",
-        "fullName",
-        "companyName",
-        "monthlyMessages",
-        "temsilciCount",
-        "features",
-      ],
-      [
-        data.customerType || "",
-        data.fullName || "",
-        data.companyName || "",
-        data.monthlyMessages || "",
-        data.temsilciCount || "",
-        (data.features || []).join(";"),
-      ],
+        : '<div style="color:var(--muted)">(yok)</div>',
+      '<hr style="border:none;border-top:1px dashed var(--border);margin:10px 0" />',
+      `<div><strong>Önerilen Paket:</strong> ${escapeHtml(rec.pkg)}</div>`,
+      `<div><strong>Açıklama:</strong> ${escapeHtml(rec.desc)}</div>`,
+      `<div><strong>Gerekçe:</strong> ${escapeHtml(rec.reason)}</div>`,
     ];
-    const csv = rows
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    download("ccpilot-summary.csv", csv, "text/csv");
-  });
-  document.getElementById("shareBtn")?.addEventListener("click", () => {
-    const data = collect();
-    const url = new URL(location.href);
-    url.hash = "d=" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    navigator.clipboard?.writeText(url.toString());
-    alert("Bağlantı kopyalandı.");
-  });
 
-  function getSummaryPayload() {
-    const formEl = document.getElementById("featureForm");
-    const fd = new FormData(formEl);
-
-    // Seçili özelliklerin LABEL'ları:
-    const features = Array.from(
-      document.querySelectorAll('input[name="features[]"]:checked')
-    ).map((cb) => cb.dataset.label);
-
-    // Intl-Tel için varsa gizli alanlardan E.164:
-    const phoneBireyselFull =
-      formEl.querySelector('input[name="phoneBireysel_full"]')?.value || null;
-    const phoneCorpFull =
-      formEl.querySelector('input[name="phone_full"]')?.value || null;
-
-    // Öneri (summary öncesi hesaplanmış oluyor)
-    const recommendation = {
-      pkg: "Ücretsiz Paket",
-      desc: "(varsayılan)",
-      reason: "—",
-    };
-
-    return {
-      // Kimlik
-      customerType: fd.get("customerType") || null,
-
-      // Bireysel alanları
-      fullName: fd.get("fullName") || null,
-      website: fd.get("website") || null,
-      industry: fd.get("industry") || null,
-      email: fd.get("email") || null,
-      phone: phoneBireyselFull || fd.get("phoneBireysel") || null,
-
-      // Kurumsal alanları
-      companyName: fd.get("companyName") || null,
-      contactName: fd.get("contactName") || null,
-      websiteCorp: fd.get("websiteCorp") || null,
-      industryCorp: fd.get("industryCorp") || null,
-      emailCorp: fd.get("emailCorp") || null,
-      phoneCorp: phoneCorpFull || fd.get("phone") || null,
-
-      // Trafik
-      monthlyMessages: fd.get("monthlyMessages") || null, // slider, <select>’teki değeri güncelliyoruz
-      temsilciCount: fd.get("temsilciCount") || null, // slider, <select>’teki değeri güncelliyoruz
-
-      // Özellikler
-      features,
-
-      // Öneri
-      recommendation,
-
-      // CSRF
-      csrf_token: document.getElementById("csrf_token")?.value || null,
-    };
+    const summaryElement = document.getElementById("summaryText");
+    summaryElement.classList.add("as-html");
+    summaryElement.style.whiteSpace = "normal";
+    summaryElement.innerHTML = summaryParts.filter(Boolean).join("\n");
   }
 
-  function collect() {
-    const data = new FormData(form);
+  function escapeHtml(text) {
+    return String(text ?? "").replace(
+      /[&<>"']/g,
+      (char) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[char])
+    );
+  }
+
+  function capitalizeFirstTR(text) {
+    if (!text) return undefined;
+    text = String(text).trim();
+    if (!text) return undefined;
+    return text.charAt(0).toLocaleUpperCase("tr-TR") + text.slice(1);
+  }
+
+  function titleCaseTR(text) {
+    if (!text) return undefined;
+    return String(text)
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toLocaleUpperCase("tr-TR") + word.slice(1))
+      .join(" ");
+  }
+
+  function downloadFile(filename, content, type = "text/plain") {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([content], { type }));
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function setupExportButtons() {
+    document.getElementById("copyBtn")?.addEventListener("click", () => {
+      const text = document.getElementById("summaryText").textContent || "";
+      navigator.clipboard?.writeText(text);
+    });
+
+    document.getElementById("jsonBtn")?.addEventListener("click", () => {
+      const data = collectFormData();
+      downloadFile(
+        "ccpilot-summary.json",
+        JSON.stringify(data, null, 2),
+        "application/json"
+      );
+    });
+
+    document.getElementById("csvBtn")?.addEventListener("click", () => {
+      const data = collectFormData();
+      const csvRows = [
+        [
+          "customerType",
+          "fullName",
+          "companyName",
+          "monthlyMessages",
+          "temsilciCount",
+          "features",
+        ],
+        [
+          data.customerType || "",
+          data.fullName || "",
+          data.companyName || "",
+          data.monthlyMessages || "",
+          data.temsilciCount || "",
+          (data.features || []).join(";"),
+        ],
+      ];
+      const csv = csvRows
+        .map((row) =>
+          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        )
+        .join("\n");
+      downloadFile("ccpilot-summary.csv", csv, "text/csv");
+    });
+
+    document.getElementById("shareBtn")?.addEventListener("click", () => {
+      const data = collectFormData();
+      const url = new URL(location.href);
+      url.hash =
+        "d=" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      navigator.clipboard?.writeText(url.toString());
+      alert("Bağlantı kopyalandı.");
+    });
+  }
+
+  function collectFormData() {
+    const formData = new FormData(form);
     const features = $$('input[name="features[]"]:checked').map(
       (cb) => cb.dataset.label
     );
+
     return {
-      customerType: capitalizeFirstTR(data.get("customerType")),
-      fullName: titleCaseTR(data.get("fullName")),
-      companyName: titleCaseTR(data.get("companyName")),
-      monthlyMessages: data.get("monthlyMessages"),
-      temsilciCount: data.get("temsilciCount"),
+      customerType: capitalizeFirstTR(formData.get("customerType")),
+      fullName: titleCaseTR(formData.get("fullName")),
+      companyName: titleCaseTR(formData.get("companyName")),
+      monthlyMessages: formData.get("monthlyMessages"),
+      temsilciCount: formData.get("temsilciCount"),
       features,
     };
   }
 
-  async function saveSummary() {
-    const payload = getSummaryPayload(); // buildSummary yerine JSON payload
-    try {
-      const res = await fetch("/api/summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json().catch(() => ({}));
-      if (typeof toast === "function") {
-        toast("Basvurunuz kaydedildi • ID: " + (data.id || "—"));
-      } else {
-        console.log("Basvurunuz kaydedildi • ID:", data.id || "—");
-      }
-      return data;
-    } catch (err) {
-      console.error(err);
-      alert("Kaydetme sırasında bir hata oluştu.");
-      throw err;
-    }
-  }
+  // ============================================================================
+  // INTERNATIONAL TELEPHONE INPUT
+  // ============================================================================
 
-  // --- Intl Tel Input (CSS inject) ---
-  (function injectIntlTelCSS() {
-    if (document.getElementById("intl-tel-style")) return;
-    const css = `
-    .tel-wrap{display:flex;gap:8px;align-items:stretch;position:relative}
-    .tel-cc-btn{display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--border);
-      background:#0d1017;color:var(--text);border-radius:10px;cursor:pointer;white-space:nowrap}
-    .tel-cc-btn .flag{font-size:18px;line-height:1}
-    .tel-cc-btn .code{opacity:.9;font-variant-numeric:tabular-nums}
-    .tel-list{position:absolute;z-index:1000;left:0;top:100%;margin-top:6px;width:min(420px,92vw);
-      background:#0b0f16;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
-    .tel-list.open{display:block}
-    .tel-search{width:calc(100% - 16px);margin:8px 8px 6px;padding:8px 10px;border:1px solid var(--border);
-      background:#0d1017;color:var(--text);border-radius:8px;outline:0}
-    .tel-items{max-height:300px;overflow:auto;padding:4px}
-    .tel-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
-      background:transparent;border:0;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left}
-    .tel-item:hover,.tel-item:focus{background:#0f1520;outline:1px solid var(--border)}
-    .tel-item .left{display:flex;align-items:center;gap:10px}
-    .tel-item .flag{font-size:18px}
-    .tel-item .name{opacity:.95}
-    .tel-item .dial{font-variant-numeric:tabular-nums;opacity:.9}
-    `;
-    const s = document.createElement("style");
-    s.id = "intl-tel-style";
-    s.textContent = css;
-    document.head.appendChild(s);
-  })();
-
-  // --- Intl Tel Input ---
-  const INTL_COUNTRIES = [
+  const COUNTRIES = [
     { iso: "TR", name: "Türkiye", dial: "90" },
     { iso: "US", name: "United States", dial: "1" },
     { iso: "GB", name: "United Kingdom", dial: "44" },
@@ -1289,139 +948,246 @@
     { iso: "ZA", name: "South Africa", dial: "27" },
   ];
 
-  function flagEmoji(iso2) {
+  function getFlagEmoji(iso2) {
     return [...iso2.toUpperCase()]
-      .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
+      .map((char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
       .join("");
   }
-  function digits(s) {
-    return String(s || "").replace(/\D+/g, "");
+
+  function extractDigits(text) {
+    return String(text || "").replace(/\D+/g, "");
   }
 
-  function initIntlTel(inputId, defaultIso = "TR") {
+  function initInternationalPhone(inputId, defaultCountry = "TR") {
     const input = document.getElementById(inputId);
     if (!input) return;
 
-    // sarmala
+    // Wrap input
     const wrap = document.createElement("div");
     wrap.className = "tel-wrap";
     input.parentElement.insertBefore(wrap, input);
     wrap.appendChild(input);
 
-    // gizli alanlar (dial & e164)
-    const hidDial = document.createElement("input");
-    hidDial.type = "hidden";
-    hidDial.name = input.name + "_dial";
-    const hidFull = document.createElement("input");
-    hidFull.type = "hidden";
-    hidFull.name = input.name + "_full";
-    wrap.appendChild(hidDial);
-    wrap.appendChild(hidFull);
+    // Hidden fields for dial code and full number
+    const dialInput = document.createElement("input");
+    dialInput.type = "hidden";
+    dialInput.name = input.name + "_dial";
 
-    // buton
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "tel-cc-btn";
-    const btnFlag = document.createElement("span");
-    btnFlag.className = "flag";
-    const btnCode = document.createElement("span");
-    btnCode.className = "code";
-    btn.append(btnFlag, btnCode);
-    wrap.insertBefore(btn, input);
+    const fullInput = document.createElement("input");
+    fullInput.type = "hidden";
+    fullInput.name = input.name + "_full";
 
-    // dropdown
+    wrap.appendChild(dialInput);
+    wrap.appendChild(fullInput);
+
+    // Country selector button
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tel-cc-btn";
+
+    const flagSpan = document.createElement("span");
+    flagSpan.className = "flag";
+
+    const codeSpan = document.createElement("span");
+    codeSpan.className = "code";
+
+    button.append(flagSpan, codeSpan);
+    wrap.insertBefore(button, input);
+
+    // Dropdown list
     const list = document.createElement("div");
     list.className = "tel-list";
+
     const search = document.createElement("input");
     search.className = "tel-search";
     search.placeholder = "Ülke veya kod ara…";
+
     const items = document.createElement("div");
     items.className = "tel-items";
+
     list.appendChild(search);
     list.appendChild(items);
     wrap.appendChild(list);
 
-    // liste öğeleri
-    function render(filter = "") {
-      const f = filter.trim().toLowerCase();
+    function renderCountries(filter = "") {
+      const searchTerm = filter.trim().toLowerCase();
       items.innerHTML = "";
-      INTL_COUNTRIES.filter(
-        (c) =>
-          !f ||
-          c.name.toLowerCase().includes(f) ||
-          c.iso.toLowerCase().includes(f) ||
-          ("+" + c.dial).includes(f)
-      ).forEach((c) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "tel-item";
-        b.innerHTML = `<span class="left"><span class="flag">${flagEmoji(
-          c.iso
-        )}</span><span class="name">${
-          c.name
-        }</span></span><span class="dial">+${c.dial}</span>`;
-        b.addEventListener("click", () => {
-          setCountry(c);
-          close();
+
+      COUNTRIES.filter(
+        (country) =>
+          !searchTerm ||
+          country.name.toLowerCase().includes(searchTerm) ||
+          country.iso.toLowerCase().includes(searchTerm) ||
+          ("+" + country.dial).includes(searchTerm)
+      ).forEach((country) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "tel-item";
+        item.innerHTML = `
+            <span class="left">
+              <span class="flag">${getFlagEmoji(country.iso)}</span>
+              <span class="name">${country.name}</span>
+            </span>
+            <span class="dial">+${country.dial}</span>
+          `;
+
+        item.addEventListener("click", () => {
+          selectCountry(country);
+          closeDropdown();
         });
-        items.appendChild(b);
+
+        items.appendChild(item);
       });
     }
-    render();
-    search.addEventListener("input", () => render(search.value));
 
-    // aç/kapa
-    function open() {
+    function openDropdown() {
       list.classList.add("open");
       search.focus();
     }
-    function close() {
+
+    function closeDropdown() {
       list.classList.remove("open");
     }
-    btn.addEventListener("click", (e) => {
+
+    function selectCountry(country) {
+      flagSpan.textContent = getFlagEmoji(country.iso);
+      codeSpan.textContent = `+${country.dial}`;
+      dialInput.value = country.dial;
+      updateFullNumber();
+    }
+
+    function updateFullNumber() {
+      const e164 = "+" + (dialInput.value || "") + extractDigits(input.value);
+      fullInput.value = e164;
+    }
+
+    // Event listeners
+    button.addEventListener("click", (e) => {
       e.preventDefault();
       list.classList.toggle("open");
       if (list.classList.contains("open")) search.focus();
     });
+
+    search.addEventListener("input", () => renderCountries(search.value));
+    input.addEventListener("input", updateFullNumber);
+
     document.addEventListener("click", (e) => {
-      if (!wrap.contains(e.target)) close();
+      if (!wrap.contains(e.target)) closeDropdown();
     });
+
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") closeDropdown();
     });
 
-    // seçimi uygula + e164 üret
-    function setCountry(c) {
-      btnFlag.textContent = flagEmoji(c.iso);
-      btnCode.textContent = `+${c.dial}`;
-      hidDial.value = c.dial;
-      updateFull();
-    }
-    function updateFull() {
-      const e164 = "+" + (hidDial.value || "") + digits(input.value);
-      hidFull.value = e164;
-    }
-    input.addEventListener("input", updateFull);
-
-    // başlangıç
-    const start =
-      INTL_COUNTRIES.find((c) => c.iso === defaultIso) || INTL_COUNTRIES[0];
-    setCountry(start);
+    // Initialize
+    renderCountries();
+    const defaultCountryData =
+      COUNTRIES.find((c) => c.iso === defaultCountry) || COUNTRIES[0];
+    selectCountry(defaultCountryData);
   }
-  ["email", "emailCorp"].forEach((id) => {
-    const el = document.getElementById(id);
-    el?.addEventListener("blur", (e) => validateEmailField(e.target));
-  });
-  ["phoneBireysel", "phone"].forEach((id) => {
-    const el = document.getElementById(id);
-    el?.addEventListener("blur", (e) => validatePhoneField(e.target));
-  });
-  // ---- Başlat
-  initMonthlyMessagesSlider();
-  initAgentCountSlider();
-  initIntlTel("phoneBireysel", "TR"); // bireysel
-  initIntlTel("phone", "TR");
-  initCustomerTypeTabs(); // Add this line
-  showStep(0);
-  bindFormSubmit();
+
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
+
+  function setupEventListeners() {
+    btnNext.addEventListener("click", goToNextStep);
+    btnBack.addEventListener("click", goToPreviousStep);
+
+    // Modal functionality - simplified approach
+    function setupModal() {
+      const btnContact = document.getElementById("btnContact");
+      const contactModal = document.getElementById("contactModal");
+      const closeContactModal = document.getElementById("closeContactModal");
+
+      if (!btnContact || !contactModal || !closeContactModal) {
+        console.warn("Modal elements not found");
+        return;
+      }
+
+      // Open modal
+      btnContact.addEventListener("click", (e) => {
+        e.preventDefault();
+        contactModal.classList.remove("hidden");
+      });
+
+      // Close modal with Tamam button
+      closeContactModal.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        contactModal.classList.add("hidden");
+      });
+
+      // Close modal when clicking outside
+      contactModal.addEventListener("click", (e) => {
+        if (e.target === contactModal) {
+          contactModal.classList.add("hidden");
+        }
+      });
+
+      // Prevent modal content clicks from closing the modal
+      const modalContent = contactModal.querySelector(".modal-content");
+      if (modalContent) {
+        modalContent.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
+    }
+
+    // Setup modal
+    setupModal();
+
+    form.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !["TEXTAREA"].includes(e.target.tagName)) {
+        e.preventDefault();
+        if (e.shiftKey) goToPreviousStep();
+        else goToNextStep();
+      }
+    });
+
+    // Global Escape key handler for modal
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const modal = document.getElementById("contactModal");
+        if (modal && !modal.classList.contains("hidden")) {
+          modal.classList.add("hidden");
+        }
+      }
+    });
+
+    // Email validation on blur
+    ["email", "emailCorp"].forEach((id) => {
+      const element = document.getElementById(id);
+      element?.addEventListener("blur", (e) => validateEmail(e.target));
+    });
+
+    // Phone validation on blur
+    ["phoneBireysel", "phone"].forEach((id) => {
+      const element = document.getElementById(id);
+      element?.addEventListener("blur", (e) => validatePhone(e.target));
+    });
+  }
+
+  function initializeApp() {
+    // Initialize all components
+    initializeFeatureGroups();
+    setupFeatureCardEvents();
+    initCustomerTypeTabs();
+    initMonthlyMessagesSlider();
+    initAgentCountSlider();
+    initInternationalPhone("phoneBireysel", "TR");
+    initInternationalPhone("phone", "TR");
+    setupExportButtons();
+    setupEventListeners();
+
+    // Show first step
+    showStep(0);
+  }
+
+  // Start the application when DOM is loaded
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeApp);
+  } else {
+    initializeApp();
+  }
 })();
