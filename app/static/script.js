@@ -390,24 +390,39 @@
 
     if (isBireysel) {
       const industryEl = document.getElementById("industry");
+      const emailEl = document.getElementById("email");
+      const phoneEl = document.getElementById("phoneBireysel");
+
       const okName = validateRequiredNotEmpty(fullNameInput);
       const okInd = validateRequiredNotEmpty(industryEl);
+      const okEmail = validateEmailField(emailEl);
+      const okPhone = validatePhoneField(phoneEl);
+
       if (!okName) fullNameInput?.focus();
       else if (!okInd) industryEl?.focus();
-      return okName && okInd;
+      else if (!okEmail) emailEl?.focus();
+      else if (!okPhone) phoneEl?.focus();
+
+      return okName && okInd && okEmail && okPhone;
     } else {
       const contactEl = document.getElementById("contactName");
       const sectorEl = document.getElementById("industryCorp");
+      const emailEl = document.getElementById("emailCorp");
+      const phoneEl = document.getElementById("phone");
 
       const okCompany = validateRequiredNotEmpty(companyNameInput);
       const okContact = validateRequiredNotEmpty(contactEl);
       const okSector = validateRequiredNotEmpty(sectorEl);
+      const okEmail = validateEmailField(emailEl);
+      const okPhone = validatePhoneField(phoneEl);
 
       if (!okCompany) companyNameInput?.focus();
       else if (!okContact) contactEl?.focus();
       else if (!okSector) sectorEl?.focus();
+      else if (!okEmail) emailEl?.focus();
+      else if (!okPhone) phoneEl?.focus();
 
-      return okCompany && okContact && okSector;
+      return okCompany && okContact && okSector && okEmail && okPhone;
     }
   }
 
@@ -647,9 +662,6 @@
     // Kimlik adımında boş alan kontrolü
     if (!validateIdentityExtrasOnStep()) return;
 
-    // Kimlik adımında e-posta/telefon format kontrolü (doluysa format)
-    if (!validateContactsOnStep()) return;
-    if (!validateContactsOnStep()) return;
     const lastBeforeSummary = stepGroups.length - 2;
 
     if (idx === lastBeforeSummary) {
